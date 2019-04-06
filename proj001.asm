@@ -27,7 +27,7 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 PLACE		1000H
 
 key_press:	WORD	0
-xx:			WORD	4
+xx:			WORD	0
 yy:			WORD	0
 status:		WORD	1
 
@@ -65,7 +65,8 @@ main:
 	MOV		R1,		[R1]
 	MOV		R2,		status
 	MOV		R2,		[R2]
-	CALL	display
+
+	CALL 	display
 
 	JMP		main
 
@@ -191,15 +192,14 @@ display:
 		SUB	R6,		1
 		JMP	ciclo_disp		
 	
-	next_disp1:
+	next_disp1:																											;Certo até aqui
+	MOV		R7,		8
+	DIV		R0,		R7			;x/8
 	MOV		R7,		4
-	DIV		R0,		R7			;x/4
 	MUL		R1,		R7			;y*4
 	ADD		R4,		R0			;screen + (x/4)
 	ADD		R4,		R1			;screen + (x/4) + 4*y
-	MOV		R10,	[R4]		;vai buscar o byte atual para R10
-
-
+	MOVB	R10,	[R4]		;vai buscar o byte atual para R10
 
   	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
   	JZ		apaga
@@ -213,7 +213,6 @@ display:
   	AND		R10,	R5			;escreve 0 no bit
 
   
-
 
   fim_display:
   	MOVB	[R4],	R10			;escreve no display
