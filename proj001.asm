@@ -14,9 +14,10 @@
 ; │ Constantes															│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 
+; 0000H --> 5FFFH	[RAM]
 DISPLAY1		EQU 0A000H  ; Displays hexa			(periférico POUT-1)
 TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
-DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
+DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)													[USADOS PARA DEBUG]
 TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
 PSCREEN			EQU 8000H   ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
@@ -73,6 +74,7 @@ main:
 
 teclado:
   init:
+  	PUSH	R0
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
@@ -82,12 +84,11 @@ teclado:
 	PUSH	R7
 	PUSH	R8
 
-	MOV 	R5, 	TEC_IN	; R5 com endereço de memória Input teclado 
-	MOV		R1, 	LINHA	; testar a linha
-	MOV		R2, 	TEC_OUT	; R2 com o endereço do periférico
+	MOV 	R5, 	TEC_IN		; R5 com endereço de memória Input teclado 
+	MOV		R1, 	LINHA		; testar a linha
+	MOV		R2, 	TEC_OUT		; R2 com o endereço do periférico
 	MOV 	R6, 	key_press	; Onde se guarda o output do teclado
-	MOV 	R7, 	20H		; Valor caso nenhuma tecla seja primida
-	MOV		R0,		DISPLAY1; DEBUG VALOR NO DISPLAY																	#
+	MOV 	R7, 	20H			; Valor caso nenhuma tecla seja primida
 
   ciclo:
  	SHR		R1, 	1		; linha do teclado, passa para a seguinte [anterior]
@@ -119,11 +120,15 @@ teclado:
 	SHL		R7, 	2		; linha * 4
 	ADD		R7, 	R8		; (linha*4) + coluna
 
-	MOV		[R0],	R7		;DEBUG																						#
-
+  debug:;####################
+  	PUSH	R0
+  	MOV		R0,		DISPLAY2
+  	MOVB	[R0],	R7
+  	POP		R0
+  ;##########################
   store:
-	MOVB 	[R6],	R7
-	
+	MOV 	[R6],	R7
+
 
   fim:
 	POP 	R8
@@ -134,7 +139,7 @@ teclado:
 	POP		R3
 	POP		R2
 	POP		R1
+	POP		R0
 	RET
-
 
 
