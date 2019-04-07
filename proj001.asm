@@ -31,7 +31,7 @@ xx:			WORD	0
 yy:			WORD	0
 status:		WORD	1
 
-submarino:	STRING	5,3,0,0		;largura, altura, posição x, y
+submarino:	STRING	1,20,5,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0
 			STRING	0,0,0,1,0
 			STRING	1,1,1,1,1
@@ -58,21 +58,24 @@ inicializacao:
 	MOV		R10,	0
 
 main:
+	;###TECLADO
 	;CALL	teclado
-	MOV		R0,		xx
-	MOV		R0,		[R0]
-	MOV		R1,		yy
-	MOV		R1,		[R1]
-	MOV		R2,		status
-	MOV		R2,		[R2]
+	;###DISPLAY
+	;MOV		R0,		xx
+	;MOV		R0,		[R0]
+	;MOV		R1,		yy
+	;MOV		R1,		[R1]
+	;MOV		R2,		status
+	;MOV		R2,		[R2]
+	;CALL		display
+	;###DISPLAY Submarino
+	MOV		R0,		submarino
+	CALL 	imagem
 
-	CALL 	display
-
-	JMP		main
+	JMP		fim
 
 fim:
 	JMP		fim
-
 
 
 
@@ -166,19 +169,15 @@ display:
   	PUSH	R0
 	PUSH	R1
 	PUSH	R2
-	PUSH	R3
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
 	PUSH	R7
-	PUSH	R8
-	PUSH	R9
 	PUSH	R10
   processa:					;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
   	;R0,	x
   	;R1,	y
   	;R2,	estado
-  	MOV		R3,		0			;byte que vai ser alterado
 	MOV		R4,		PSCREEN		;endereço base do display
 	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
@@ -199,8 +198,8 @@ display:
 	MUL		R1,		R7			;y*4
 	ADD		R4,		R0			;screen + (x/4)
 	ADD		R4,		R1			;screen + (x/4) + 4*y
-	MOVB	R10,	[R4]		;vai buscar o byte atual para R10
 
+	MOVB	R10,	[R4]		;vai buscar o byte atual para R10
   	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
   	JZ		apaga
   
@@ -209,16 +208,100 @@ display:
   	JMP		fim_display
   
   apaga:
-  	XOR		R5,		R5			;inverte a mascara
+  	NOT		R5			;inverte a mascara ;##NOT WORKING
   	AND		R10,	R5			;escreve 0 no bit
-
-  
-
+ 
   fim_display:
   	MOVB	[R4],	R10			;escreve no display
   	POP		R10
-  	POP		R9
-	POP 	R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		imagem													│
+; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
+; │				Correspondente											│
+; │	INPUT:		R0 endereço tabela com Xi, Yi, Δx, Δy					│
+; │	OUTPUT:		Desenho no pixelscreen									│
+; ╰─────────────────────────────────────────────────────────────────────╯
+imagem:
+  init_imagem:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R10,	R0		;endereço tabela
+	MOV		R0,		0		;vai conter coordenada x
+	MOV		R1,		0		;vai conter coordenada y
+	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
+	MOV		R7,		0		;calculos auxiliares
+	MOVB	R3,		[R10]	;Xinicial
+	ADD		R10,		1
+	MOVB	R4,		[R10]	;Yinicial
+	ADD		R10,		1
+	MOVB	R5,		[R10]	;Δx
+	ADD		R10,		1
+	MOVB	R6,		[R10]	;Δy
+main_imagem:
+	MOV		R0,		R3				;coordenada x
+	MOV		R1,		R4				;coordenada y
+	SUB		R1,		1				;o ciclo começa por adicionar 1
+	MOV		R8,		R6
+	ADD		R8,		R4				;y final
+	MOV		R9,		R5
+	ADD		R9,		R3				;x final
+	ADD		R10,	1				;avança para primeira posição
+	
+	imagem_linhas:
+		ADD		R1,		1
+		CMP		R8,		R1
+		JZ		fim_imagem
+		MOV		R0,		R3
+		imagem_colunas:
+			MOVB	R2,		[R10]
+			CALL	display
+			ADD		R10,	1
+			ADD		R0,		1
+			CMP		R9,		R0
+			JZ		imagem_linhas
+			JMP		imagem_colunas
+
+
+
+
+;imagem_linhas: for(y=R1, y <= R6+R4[y final], y++){ 
+;	imagem_colunas: for(x=R0, x <= R5+R3[x final], x++){
+;						display(R0,R1,R2)
+;						ADD		R10,	1
+;						MOV		R2,		[R10]
+;					}
+;				}
+
+
+
+
+
+
+
+  fim_imagem:
+	POP		R10
+	POP		R9
+	POP		R8
 	POP		R7
 	POP		R6
 	POP		R5
@@ -228,5 +311,19 @@ display:
 	POP		R1
 	POP		R0
 	RET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
