@@ -7,6 +7,7 @@
 ;│	Vasyl Lanko				93622		│
 ;╰──────────────────────────────────────╯
 
+;																														│Comentários debug para a direita do caracter 120
 
 
 
@@ -60,6 +61,7 @@ inicializacao:
 main:
 	;###TECLADO
 	;CALL	teclado
+
 	;###DISPLAY
 	;MOV		R0,		xx
 	;MOV		R0,		[R0]
@@ -68,11 +70,11 @@ main:
 	;MOV		R2,		status
 	;MOV		R2,		[R2]
 	;CALL		display
+
 	;###DISPLAY Submarino
 	MOV		R0,		submarino
 	CALL 	imagem
 
-	JMP		fim
 
 fim:
 	JMP		fim
@@ -135,12 +137,12 @@ teclado:
 	SHL		R7, 	2		; linha * 4
 	ADD		R7, 	R8		; (linha*4) + coluna
 
-  debug:;################################################################################################################
+  debug:;###############################################################################################################DEBUG, apagar mais tarde
   	PUSH	R0
   	MOV		R0,		DISPLAY2
   	MOVB	[R0],	R7
   	POP		R0
-  ;######################################################################################################################
+  ;#####################################################################################################################Apagar até aqui
   store:
 	MOV 	[R6],	R7
 
@@ -191,7 +193,7 @@ display:
 		SUB	R6,		1
 		JMP	ciclo_disp		
 	
-	next_disp1:																											;Certo até aqui
+	next_disp1:
 	MOV		R7,		8
 	DIV		R0,		R7			;x/8
 	MOV		R7,		4
@@ -208,7 +210,7 @@ display:
   	JMP		fim_display
   
   apaga:
-  	NOT		R5			;inverte a mascara ;##NOT WORKING
+  	NOT		R5					;inverte a mascara 													####################Não tenho a certeza se está bem
   	AND		R10,	R5			;escreve 0 no bit
  
   fim_display:
@@ -240,7 +242,6 @@ imagem:
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
-	PUSH	R7
 	PUSH	R8
 	PUSH	R9
 	PUSH	R10
@@ -249,7 +250,7 @@ imagem:
 	MOV		R0,		0		;vai conter coordenada x
 	MOV		R1,		0		;vai conter coordenada y
 	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
-	MOV		R7,		0		;calculos auxiliares
+
 	MOVB	R3,		[R10]	;Xinicial
 	ADD		R10,		1
 	MOVB	R4,		[R10]	;Yinicial
@@ -267,42 +268,24 @@ main_imagem:
 	ADD		R9,		R3				;x final
 	ADD		R10,	1				;avança para primeira posição
 	
-	imagem_linhas:
-		ADD		R1,		1
-		CMP		R8,		R1
-		JZ		fim_imagem
-		MOV		R0,		R3
-		imagem_colunas:
+	imagem_linhas:							;for(y=R1, y <= R6+R4[y final], y++){ 
+		ADD		R1,		1					;	percorre as linhas até a coordenada final ser igual à ultima escrita
+		CMP		R8,		R1					
+		JZ		fim_imagem					
+		MOV		R0,		R3					
+		imagem_colunas:						;	for(x=R0, x <= R5+R3[x final], x++){ 
 			MOVB	R2,		[R10]
-			CALL	display
-			ADD		R10,	1
+			CALL	display					;		display(R0,R1,R2)
+			ADD		R10,	1				;		ADD		R10,	1
 			ADD		R0,		1
 			CMP		R9,		R0
-			JZ		imagem_linhas
-			JMP		imagem_colunas
-
-
-
-
-;imagem_linhas: for(y=R1, y <= R6+R4[y final], y++){ 
-;	imagem_colunas: for(x=R0, x <= R5+R3[x final], x++){
-;						display(R0,R1,R2)
-;						ADD		R10,	1
-;						MOV		R2,		[R10]
-;					}
-;				}
-
-
-
-
-
-
+			JZ		imagem_linhas			;	}
+			JMP		imagem_colunas			;}
 
   fim_imagem:
 	POP		R10
 	POP		R9
 	POP		R8
-	POP		R7
 	POP		R6
 	POP		R5
 	POP		R4
@@ -311,19 +294,3 @@ main_imagem:
 	POP		R1
 	POP		R0
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
