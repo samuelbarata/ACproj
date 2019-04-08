@@ -32,10 +32,10 @@ xx:			WORD	0
 yy:			WORD	0
 status:		WORD	1
 
-submarino:	STRING	1,20,5,3		;x, y, Δx, Δy
-			STRING	0,0,1,1,0
-			STRING	0,0,0,1,0
-			STRING	1,1,1,1,1
+submarino:	STRING	4,4,6,3		;x, y, Δx, Δy
+			STRING	0,0,1,1,0,0
+			STRING	0,0,0,1,0,0
+			STRING	1,1,1,1,1,1
 
 SP_final:	TABLE	100H
 SP_inicial:
@@ -73,8 +73,10 @@ main:
 
 	;###DISPLAY Submarino
 	MOV		R0,		submarino
+	MOV		R1,		1			;escreve
 	CALL 	imagem
-
+	MOV		R1,		0			;apaga
+	CALL 	imagem
 
 fim:
 	JMP		fim
@@ -230,7 +232,7 @@ display:
 ; │	ROTINA:		imagem													│
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
 ; │				Correspondente											│
-; │	INPUT:		R0 endereço tabela com Xi, Yi, Δx, Δy					│
+; │	INPUT:		R0 endereço STRING; R1 escreve/apaga					│
 ; │	OUTPUT:		Desenho no pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 imagem:
@@ -242,11 +244,13 @@ imagem:
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
+	PUSH	R7
 	PUSH	R8
 	PUSH	R9
 	PUSH	R10
 
 	MOV		R10,	R0		;endereço tabela
+	MOV		R7,		R1		;contem 1 escrever; 0 apagar
 	MOV		R0,		0		;vai conter coordenada x
 	MOV		R1,		0		;vai conter coordenada y
 	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
@@ -275,17 +279,28 @@ main_imagem:
 		MOV		R0,		R3					
 		imagem_colunas:						;	for(x=R0, x <= R5+R3[x final], x++){ 
 			MOVB	R2,		[R10]
-			CALL	display					;		display(R0,R1,R2)
+
+			AND		R2,		R2				;de acordo com a função estar a escrever ou apagar a imagem chama ou não a f # não testado
+			JNZ		chamada_display			;		display(R0,R1,R2)
+
+		after_chama_disp:
 			ADD		R10,	1				;		ADD		R10,	1
 			ADD		R0,		1
 			CMP		R9,		R0
 			JZ		imagem_linhas			;	}
 			JMP		imagem_colunas			;}
 
+  chamada_display:
+  		MOV		R2,		R7
+		CALL	display
+		JMP		after_chama_disp
+
+
   fim_imagem:
 	POP		R10
 	POP		R9
 	POP		R8
+	POP		R7
 	POP		R6
 	POP		R5
 	POP		R4
