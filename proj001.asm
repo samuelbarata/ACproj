@@ -28,11 +28,8 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 PLACE		1000H
 
 key_press:	STRING	0,0				;tecla primida, se no instante anterior uma tecla tinha cido primida
-xx:			WORD	0
-yy:			WORD	0
-status:		WORD	1
 
-submarino:	STRING	15,15,6,3		;x, y, Δx, Δy
+submarino:	STRING	16,16,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
@@ -139,14 +136,32 @@ teclado:
 	SHL		R7, 	2		; linha * 4
 	ADD		R7, 	R8		; (linha*4) + coluna
 
-  debug:;###############################################################################################################DEBUG, apagar mais tarde
-  	PUSH	R0
-  	MOV		R0,		DISPLAY2
-  	MOVB	[R0],	R7
-  	POP		R0
-  ;#####################################################################################################################Apagar até aqui
   store:
+	CMP		R7,		-1
+	JZ		tecla_nula
+
+  ;se tecla anterior == -1:
+	MOV		R8,		R6
+	ADD		R8,		2
+	MOV		R8,		[R8]	;tecla anterior != -1?
+	AND		R8,		R8		;1 => não escrever; 0 => escrever
+	JNZ 	tecla_nula
+
+  	tecla_valida:
 	MOV 	[R6],	R7
+	ADD		R6,		2
+	MOV		R7,		1		;escreve 1 para por na memoria
+	MOV		[R6],	R7		;tecla foi primida, manter a 1 até largar
+	JMP		fim_teclado
+
+
+	tecla_nula:
+	MOV		R7,		-1
+	MOV 	[R6],	R7
+	MOV		R7,		0		;valor pra escrever na memoria
+	ADD		R6,		2
+	MOV		[R6],	R7		;tecla não foi primida, próxima vez pode escrever
+	JMP		fim_teclado
 
 
   fim_teclado:
