@@ -20,19 +20,19 @@ DISPLAY1		EQU 0A000H  ; Displays hexa			(periférico POUT-1)
 TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
 DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
 TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
-PSCREEN			EQU 08000H   ; endereço do ecrã		(pixelscreen)
+PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 
 
 
 PLACE		1000H
 
-key_press:	WORD	0
+key_press:	STRING	0,0				;tecla primida, se no instante anterior uma tecla tinha cido primida
 xx:			WORD	0
 yy:			WORD	0
 status:		WORD	1
 
-submarino:	STRING	4,4,6,3		;x, y, Δx, Δy
+submarino:	STRING	15,15,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
@@ -60,7 +60,7 @@ inicializacao:
 
 main:
 	;###TECLADO
-	;CALL	teclado
+	CALL	teclado
 
 	;###DISPLAY
 	;MOV		R0,		xx
@@ -79,7 +79,7 @@ main:
 	CALL 	imagem
 
 fim:
-	JMP		fim
+	JMP		main
 
 
 
@@ -212,7 +212,7 @@ display:
   	JMP		fim_display
   
   apaga:
-  	NOT		R5					;inverte a mascara 													####################Não tenho a certeza se está bem
+  	NOT		R5					;inverte a mascara
   	AND		R10,	R5			;escreve 0 no bit
  
   fim_display:
@@ -232,6 +232,7 @@ display:
 ; │	ROTINA:		imagem													│
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
 ; │				Correspondente											│
+; │																		│
 ; │	INPUT:		R0 endereço STRING; R1 escreve/apaga					│
 ; │	OUTPUT:		Desenho no pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
@@ -272,31 +273,28 @@ main_imagem:
 	ADD		R9,		R3				;x final
 	ADD		R10,	1				;avança para primeira posição
 	
-	imagem_linhas:							;for(y=R1, y <= R6+R4[y final], y++){ 
-		ADD		R1,		1					;	percorre as linhas até a coordenada final ser igual à ultima escrita
+	imagem_linhas:
+		ADD		R1,		1					;percorre as linhas até a coordenada final ser igual à ultima escrita
 		CMP		R8,		R1					
 		JZ		fim_imagem					
 		MOV		R0,		R3					
-		imagem_colunas:						;	for(x=R0, x <= R5+R3[x final], x++){ 
-			MOVB	R2,		[R10]
-
-			AND		R2,		R2				;de acordo com a função estar a escrever ou apagar a imagem chama ou não a f # não testado
-			JNZ		chamada_display			;		display(R0,R1,R2)
-
+		imagem_colunas:						; percorre as colunas
+			MOVB	R2,		[R10]			; vai buscar o bit seguinte à memoria
+			AND		R2,		R2				; verifica se o bit está ativo ou não
+			JNZ		chamada_display			; Se o bit estiver ativo vai chamar a funcao display
 		after_chama_disp:
-			ADD		R10,	1				;		ADD		R10,	1
-			ADD		R0,		1
-			CMP		R9,		R0
-			JZ		imagem_linhas			;	}
-			JMP		imagem_colunas			;}
+			ADD		R10,	1				; avança para a posição seguinte de memoria
+			ADD		R0,		1				; soma 1 ao x
+			CMP		R9,		R0				; vê se já passou do limite de colunas
+			JZ		imagem_linhas			; se passou avança linha seguinte
+			JMP		imagem_colunas			; se n repete
 
   chamada_display:
-  		MOV		R2,		R7
-		CALL	display
-		JMP		after_chama_disp
+  		MOV		R2,		R7					; escreve 0 ou 1 com base se queremos apagar ou escrever a imagem
+		CALL	display						; chama a rotina display com R0 X; R1 Y; R2 [escreve/apaga]
+		JMP		after_chama_disp			; volta para a posição anterior
 
-
-  fim_imagem:
+  fim_imagem:						;devolve aos registos os valores originais
 	POP		R10
 	POP		R9
 	POP		R8
@@ -309,3 +307,45 @@ main_imagem:
 	POP		R1
 	POP		R0
 	RET
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		processa_teclado										│
+; │	DESCRICAO:	analisa o que fazer com base no input do teclado		│
+; │				temos de verificar se a ultima tecla primida foi		│
+; │				igual ou não											│
+; │	INPUT:		0														│
+; │	OUTPUT:		0														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+processa_teclado:
+  init_p_teclado:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+  main_p_teclado:
+	MOV		R0,		key_press
+	MOV		R0,		[R0]		;ultima tecla primida
+
+
+  fim_p_teclado:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
