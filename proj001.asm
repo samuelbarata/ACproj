@@ -61,8 +61,8 @@ inicializacao:
 
 main:
 	;###TECLADO
-	;CALL	teclado
-	;CALL	processa_teclado
+	CALL	teclado
+	CALL	processa_teclado
 	;###DISPLAY
 	;MOV		R0,		xx
 	;MOV		R0,		[R0]
@@ -73,11 +73,11 @@ main:
 	;CALL		display
 
 	;###DISPLAY Submarino
-	MOV		R0,		submarino
-	MOV		R1,		1			;escreve
-	CALL 	imagem
-	MOV		R1,		0			;apaga
-	CALL 	imagem
+	;MOV		R0,		submarino
+	;MOV		R1,		1			;escreve
+	;CALL 	imagem
+	;MOV		R1,		0			;apaga
+	;CALL 	imagem
 
 fim:
 	JMP		main
@@ -146,25 +146,25 @@ teclado:
 
   ;se tecla anterior == -1:
 	MOV		R8,		R6
-	ADD		R8,		2
+	ADD		R8,		1
 	MOV		R8,		[R8]	;tecla anterior != -1?
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
 	JNZ 	tecla_nula
 
   	tecla_valida:
-	MOV 	[R6],	R7
-	ADD		R6,		2
+	MOVB 	[R6],	R7
+	ADD		R6,		1
 	MOV		R7,		1		;escreve 1 para por na memoria
-	MOV		[R6],	R7		;tecla foi primida, manter a 1 até largar
+	MOVB	[R6],	R7		;tecla foi primida, manter a 1 até largar
 	JMP		fim_teclado
 
 
 	tecla_nula:
 	MOV		R7,		-1
-	MOV 	[R6],	R7
+	MOVB 	[R6],	R7
 	MOV		R7,		0		;valor pra escrever na memoria
-	ADD		R6,		2
-	MOV		[R6],	R7		;tecla não foi primida, próxima vez pode escrever
+	ADD		R6,		1
+	MOVB	[R6],	R7		;tecla não foi primida, próxima vez pode escrever
 	JMP		fim_teclado
 
 
@@ -357,7 +357,7 @@ processa_teclado:
 
   main_p_teclado:
 	MOV		R2,		key_press
-	MOV		R2,		[R2]		;ultima tecla primida
+	MOVB	R2,		[R2]		;ultima tecla primida
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
@@ -421,13 +421,13 @@ processa_teclado:
 	MOV		R1,		1	;escrever
 	;move o submarino
 	MOVB	R5,		[R0]
-	ADD		R5,		 1
+	SUB		R5,		 1
 	MOVB	[R0],	R5
 	ADD		R0,		1
 	MOVB	R5,		[R0]
-	ADD		R5,		 1
+	SUB		R5,		 1
 	MOVB	[R0],	R5
-
+	
 	CALL	imagem		;escreve o submarino
 	JMP fim_p_teclado
   tec_1:
