@@ -55,10 +55,14 @@ inicializacao:
 	MOV		R9,		0
 	MOV		R10,	0
 
+	MOV		R0,		submarino
+	MOV		R1,		1			;escreve
+	CALL 	imagem
+
 main:
 	;###TECLADO
-	CALL	teclado
-
+	;CALL	teclado
+	;CALL	processa_teclado
 	;###DISPLAY
 	;MOV		R0,		xx
 	;MOV		R0,		[R0]
@@ -323,6 +327,7 @@ main_imagem:
 	POP		R0
 	RET
 
+
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		processa_teclado										│
 ; │	DESCRICAO:	analisa o que fazer com base no input do teclado		│
@@ -330,7 +335,12 @@ main_imagem:
 ; │				igual ou não											│
 ; │	INPUT:		0														│
 ; │	OUTPUT:		0														│
-; ╰─────────────────────────────────────────────────────────────────────╯
+; ├─────────────────────────────┬───────────────────────────────────────╯
+; │	0 ↖︎		1 ↑		2 ↗︎		3	│
+; │	4 ←		5		6 →		7	│
+; │	8 ↙︎		9 ↓		A ↘︎		B ↺	│
+; │	C		D		E		F ⬣	│
+; ╰─────────────────────────────╯
 processa_teclado:
   init_p_teclado:
 	PUSH	R0
@@ -346,8 +356,112 @@ processa_teclado:
 	PUSH	R10
 
   main_p_teclado:
-	MOV		R0,		key_press
-	MOV		R0,		[R0]		;ultima tecla primida
+	MOV		R2,		key_press
+	MOV		R2,		[R2]		;ultima tecla primida
+	CMP		R2,		-1			;nenhuma tecla primida
+	JZ		fim_p_teclado
+
+	MOV		R0,		submarino	;memoria do submarino
+
+
+	MOV		R4,		0			;tecla [0 a F]
+	CMP		R2,		R4			;comparar tecla anterior com tecla em R4
+	JZ		tec_0
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_1
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_2
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_3
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_4
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_5
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_6
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_7
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_8
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_9
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_A
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_B
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_C
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_D
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_E
+	ADD		R4,		1
+	CMP		R2,		R4
+	JZ		tec_F
+	JMP		fim_p_teclado
+
+
+  tec_0:
+	MOV		R1,		0	;apagar
+	CALL	imagem		;apaga o submarino
+	MOV		R1,		1	;escrever
+	;move o submarino
+	MOVB	R5,		[R0]
+	ADD		R5,		 1
+	MOVB	[R0],	R5
+	ADD		R0,		1
+	MOVB	R5,		[R0]
+	ADD		R5,		 1
+	MOVB	[R0],	R5
+
+	CALL	imagem		;escreve o submarino
+	JMP fim_p_teclado
+  tec_1:
+	JMP fim_p_teclado
+  tec_2:
+	JMP fim_p_teclado
+  tec_3:
+	JMP fim_p_teclado
+  tec_4:
+	JMP fim_p_teclado
+  tec_5:
+	JMP fim_p_teclado
+  tec_6:
+	JMP fim_p_teclado
+  tec_7:
+	JMP fim_p_teclado
+  tec_8:
+	JMP fim_p_teclado
+  tec_9:
+	JMP fim_p_teclado
+  tec_A:
+	JMP fim_p_teclado
+  tec_B:
+	JMP fim_p_teclado
+  tec_C:
+	JMP fim_p_teclado
+  tec_D:
+	JMP fim_p_teclado
+  tec_E:
+	JMP fim_p_teclado  
+  tec_F:
+	JMP fim_p_teclado
+
+
 
 
   fim_p_teclado:
@@ -363,4 +477,3 @@ processa_teclado:
 	POP		R1
 	POP		R0
 	RET
-
