@@ -27,8 +27,8 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 
 PLACE		1000H
 
-key_press:	STRING	0,0				;tecla primida, se no instante anterior uma tecla tinha cido primida
-
+key_press:	WORD	0				;tecla primida
+			WORD	0				;se no instante anterior uma tecla tinha cido primida
 submarino:	STRING	16,16,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
@@ -146,25 +146,25 @@ teclado:
 
   ;se tecla anterior == -1:
 	MOV		R8,		R6
-	ADD		R8,		1
+	ADD		R8,		2
 	MOV		R8,		[R8]	;tecla anterior != -1?
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
-	JNZ 	tecla_nula
+	JNZ		tecla_nula
 
-  	tecla_valida:
-	MOVB 	[R6],	R7
-	ADD		R6,		1
+	tecla_valida:
+	MOV		[R6],	R7
+	ADD		R6,		2
 	MOV		R7,		1		;escreve 1 para por na memoria
-	MOVB	[R6],	R7		;tecla foi primida, manter a 1 até largar
+	MOV		[R6],	R7		;tecla foi primida, manter a 1 até largar
 	JMP		fim_teclado
 
 
 	tecla_nula:
 	MOV		R7,		-1
-	MOVB 	[R6],	R7
+	MOV		[R6],	R7
 	MOV		R7,		0		;valor pra escrever na memoria
-	ADD		R6,		1
-	MOVB	[R6],	R7		;tecla não foi primida, próxima vez pode escrever
+	ADD		R6,		2
+	MOV		[R6],	R7		;tecla não foi primida, próxima vez pode escrever
 	JMP		fim_teclado
 
 
@@ -357,7 +357,8 @@ processa_teclado:
 
   main_p_teclado:
 	MOV		R2,		key_press
-	MOVB	R2,		[R2]		;ultima tecla primida
+	MOV		R2,		[R2]		;ultima tecla primida
+	
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
@@ -427,7 +428,7 @@ processa_teclado:
 	MOVB	R5,		[R0]
 	SUB		R5,		 1
 	MOVB	[R0],	R5
-	
+	MOV		R0,		submarino
 	CALL	imagem		;escreve o submarino
 	JMP fim_p_teclado
   tec_1:
