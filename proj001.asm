@@ -28,11 +28,34 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 PLACE		1000H
 
 key_press:	WORD	0				;tecla primida
-			WORD	0				;se no instante anterior uma tecla tinha cido primida
-submarino:	STRING	16,16,6,3		;x, y, Δx, Δy
+			WORD	0				;se no instante anterior uma tecla tinha cido primida								#esta parte ainda n funciona
+submarino:	STRING	13,23,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
+
+barco1:		STRING	4,4,8,6
+			STRING	0,1,0,0,0,0,0,0
+			STRING	0,0,1,0,0,0,0,0
+			STRING	0,0,1,0,0,0,0,0
+			STRING	1,1,1,1,1,1,1,1
+			STRING	0,1,1,1,1,1,1,0
+			STRING	0,0,1,1,1,1,0,0
+
+barco2:		STRING	20,5,6,5
+			STRING	0,1,0,0,0,0
+			STRING	0,0,1,0,0,0
+			STRING	0,0,1,0,0,0
+			STRING	1,1,1,1,1,1
+			STRING	0,1,1,1,1,0
+
+torpedo:	STRING	0,0,1,3
+			STRING	1
+			STRING	1
+			STRING	1
+
+bala:		STRING	0,0,1,1
+			STRING	1
 
 SP_final:	TABLE	100H
 SP_inicial:
@@ -58,26 +81,14 @@ inicializacao:
 	MOV		R0,		submarino
 	MOV		R1,		1			;escreve
 	CALL 	imagem
+	MOV		R0,		barco1
+	CALL	imagem
+	MOV		R0,		barco2
+	CALL	imagem
 
 main:
-	;###TECLADO
 	CALL	teclado
 	CALL	processa_teclado
-	;###DISPLAY
-	;MOV		R0,		xx
-	;MOV		R0,		[R0]
-	;MOV		R1,		yy
-	;MOV		R1,		[R1]
-	;MOV		R2,		status
-	;MOV		R2,		[R2]
-	;CALL		display
-
-	;###DISPLAY Submarino
-	;MOV		R0,		submarino
-	;MOV		R1,		1			;escreve
-	;CALL 	imagem
-	;MOV		R1,		0			;apaga
-	;CALL 	imagem
 
 fim:
 	JMP		main
