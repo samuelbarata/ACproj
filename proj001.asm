@@ -161,7 +161,7 @@ teclado:
 	ADD		R8,		2
 	MOV		R8,		[R8]	;tecla anterior != -1?
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
-	JNZ		tecla_nula
+	JNZ		tecla_anulada
 
 	tecla_valida:
 	MOV		[R6],	R7
@@ -170,6 +170,10 @@ teclado:
 	MOV		[R6],	R7		;tecla foi primida, manter a 1 até largar
 	JMP		fim_teclado
 
+	tecla_anulada:			;ignora a tecla primida pois ainda é a anterior
+	MOV		R7,		-1		;mete -1 na memoria para não acontecer nada mas 
+	MOV		[R6],	R7		;deixa a tecla anterior a 1 para n escrever até ser largada
+	JMP		fim_teclado
 
 	tecla_nula:
 	MOV		R7,		-1
