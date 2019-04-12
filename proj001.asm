@@ -22,13 +22,32 @@ DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
 TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
-
+NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
 
 
 PLACE		1000H
 
 key_press:	WORD	0				;tecla primida
-			WORD	0				;se no instante anterior uma tecla tinha cido primida								#esta parte ainda n funciona
+			WORD	0				;se no instante anterior uma tecla tinha cido primida
+
+table_char:	STRING	-1,	-1			;0	↖︎
+			STRING	0,	-1			;1	↑
+			STRING	1,	-1			;2	↗︎
+			STRING	0,	NMEXESUB	;3
+			STRING	-1,	0			;4	←
+			STRING	0,	NMEXESUB	;5
+			STRING	1,	0			;6	→
+			STRING	0,	NMEXESUB	;7
+			STRING	-1,	1			;8	↙︎
+			STRING	0,	1			;9	↓
+			STRING	1,	1			;A	↘︎
+			STRING	0,	NMEXESUB	;B	↺
+			STRING	0,	NMEXESUB	;C
+			STRING	0,	NMEXESUB	;D
+			STRING	0,	NMEXESUB	;E
+			STRING	0,	NMEXESUB	;F	⬣
+
+
 submarino:	STRING	13,23,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
@@ -378,58 +397,60 @@ processa_teclado:
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
+	CALL	movimento
+	JMP		fim_p_teclado
 
-	MOV		R4,		0			;tecla [0 a F]
-	CMP		R2,		R4			;comparar tecla anterior com tecla em R4
-	JZ		c_tec_0
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_1
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_2
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_3
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_4
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_5
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_6
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_7
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_8
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_9
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_A
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_B
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_C
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_D
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_E
-	ADD		R4,		1
-	CMP		R2,		R4
-	JZ		c_tec_F
-
+	;MOV		R4,		0			;tecla [0 a F]
+	;CMP		R2,		R4			;comparar tecla anterior com tecla em R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_3
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_5
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_7
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		movimenta_submarino
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_B
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_C
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_D
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_E
+	;ADD		R4,		1
+	;CMP		R2,		R4
+	;JZ		c_tec_F
+;
 	c_tec_0:
-		CALL	tec_0
+	;	CALL	tec_0
 		JMP		fim_p_teclado
 	c_tec_1:
 		CALL	tec_1
@@ -493,352 +514,102 @@ processa_teclado:
 	RET
 
 
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_0													│
-; │	DESCRICAO:	chamada quando a tecla 0 é primida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_0:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição x -1
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_1													│
-; │	DESCRICAO:	chamada quando a tecla 1 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_1:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0			;apagar
-	CALL	imagem				;apaga o submarino
-	MOV		R1,		1			;escrever
-	;move o submarino
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem				
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_2													│
-; │	DESCRICAO:	chamada quando a tecla 2 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_2:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição x +1
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_3													│
-; │	DESCRICAO:	chamada quando a tecla 3 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_3:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_4													│
-; │	DESCRICAO:	chamada quando a tecla 4 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_4:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição x -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_5													│
-; │	DESCRICAO:	chamada quando a tecla 5 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_5:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_6													│
-; │	DESCRICAO:	chamada quando a tecla 6 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_6:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição x -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_7													│
-; │	DESCRICAO:	chamada quando a tecla 7 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_7:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_8													│
-; │	DESCRICAO:	chamada quando a tecla 8 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_8:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	SUB		R5,		 1		;posição x -1
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_9													│
-; │	DESCRICAO:	chamada quando a tecla 9 é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_9:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0			;apagar
-	CALL	imagem				;apaga o submarino
-	MOV		R1,		1			;escrever
-	;move o submarino
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_A													│
-; │	DESCRICAO:	chamada quando a tecla A é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		update posição submarino								│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_A:
-	PUSH	R1
-	PUSH	R5
-	PUSH	R0
-
-	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
-	;move o submarino
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição x -1
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	MOVB	R5,		[R0]
-	ADD		R5,		 1		;posição	y -1
-	MOVB	[R0],	R5
-	MOV		R0,		submarino	;imagem a escrever
-	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
-
-	POP		R0
-	POP		R5
-	POP		R1
-	RET
-
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_B													│
-; │	DESCRICAO:	chamada quando a tecla B é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_B:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_C													│
-; │	DESCRICAO:	chamada quando a tecla C é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_C:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_D													│
-; │	DESCRICAO:	chamada quando a tecla D é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_D:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_E													│
-; │	DESCRICAO:	chamada quando a tecla E é premida						│
-; │				Correspondente											│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-tec_E:
-	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		tec_F													│
+; │	ROTINA:		movimento												│
 ; │	DESCRICAO:	chamada quando a tecla F é premida						│
 ; │				Correspondente											│
 ; │																		│
-; │	INPUT:		N/A														│
+; │	INPUT:		tecla premida em R2										│
 ; │	OUTPUT:		N/A														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
-tec_F:
+movimento:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R3,		table_char
+
+  m_ciclo:				;traduz tecla primida em movimento
+	SHL		R2, 	1		;multiplica por 2
+	ADD		R3,		R2		;posição de memoria do movimento
+	MOV		R3,		[R3]	;buscar movimentação sub
+	CMP		R3, 	NMEXESUB
+	JZ		fim_movimento
+
+	MOV		R0,		submarino	;memoria do submarino
+	MOV		R1,		0	;apagar
+	CALL	imagem		;apaga o submarino
+	MOV		R1,		1	;escrever
+	MOV		R4,		table_char
+	ADD		R4,		R2
+	;move o submarino
+	MOVB	R3,		[R4]
+	MOVB	R5,		[R0]
+	ADD		R5,		R3		;posição x + 
+	MOVB	[R0],	R5
+	ADD		R0,		1
+	ADD		R4,		1
+	MOVB	R3,		[R4]
+	MOVB	R5,		[R0]
+	ADD		R5,		R3		;posição y +
+	MOVB	[R0],	R5
+
+	MOV		R0,		submarino	;imagem a escrever
+	MOV		R1,		1			;escrever
+	CALL	imagem		;escreve o submarino
+
+
+
+  fim_movimento:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
 	RET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
