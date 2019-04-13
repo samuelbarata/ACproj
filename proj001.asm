@@ -400,103 +400,57 @@ processa_teclado:
 	CALL	movimento
 	JMP		fim_p_teclado
 
-	;MOV		R4,		0			;tecla [0 a F]
-	;CMP		R2,		R4			;comparar tecla anterior com tecla em R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
+
+	;MOV		R4,		3
 	;CMP		R2,		R4
 	;JZ		c_tec_3
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
+	;MOV		R4,		5
 	;CMP		R2,		R4
 	;JZ		c_tec_5
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
+	;MOV		R4,		7
 	;CMP		R2,		R4
 	;JZ		c_tec_7
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
-	;CMP		R2,		R4
-	;JZ		movimenta_submarino
-	;ADD		R4,		1
+	;MOV		R4,		B
 	;CMP		R2,		R4
 	;JZ		c_tec_B
-	;ADD		R4,		1
+	;MOV		R4,		C
 	;CMP		R2,		R4
 	;JZ		c_tec_C
-	;ADD		R4,		1
+	;MOV		R4,		D
 	;CMP		R2,		R4
 	;JZ		c_tec_D
-	;ADD		R4,		1
+	;MOV		R4,		E
 	;CMP		R2,		R4
 	;JZ		c_tec_E
-	;ADD		R4,		1
+	;MOV		R4,		F
 	;CMP		R2,		R4
 	;JZ		c_tec_F
-;
-	c_tec_0:
-	;	CALL	tec_0
-		JMP		fim_p_teclado
-	c_tec_1:
-		CALL	tec_1
-		JMP		fim_p_teclado
-	c_tec_2:
-		CALL	tec_2
-		JMP		fim_p_teclado
-	c_tec_3:
-		CALL	tec_3
-		JMP		fim_p_teclado
-	c_tec_4:
-		CALL	tec_4
-		JMP		fim_p_teclado
-	c_tec_5:
-		CALL	tec_5
-		JMP		fim_p_teclado
-	c_tec_6:
-		CALL	tec_6
-		JMP		fim_p_teclado
-	c_tec_7:
-		CALL	tec_7
-		JMP		fim_p_teclado
-	c_tec_8:
-		CALL	tec_8
-		JMP		fim_p_teclado
-	c_tec_9:
-		CALL	tec_9
-		JMP		fim_p_teclado
-	c_tec_A:
-		CALL	tec_A
-		JMP		fim_p_teclado
-	c_tec_B:
-		CALL	tec_B
-		JMP		fim_p_teclado
-	c_tec_C:
-		CALL	tec_C
-		JMP		fim_p_teclado
-	c_tec_D:
-		CALL	tec_D
-		JMP		fim_p_teclado
-	c_tec_E:
-		CALL	tec_E
-		JMP		fim_p_teclado
-	c_tec_F:
-		CALL	tec_F
-		JMP		fim_p_teclado
+
+
+;	c_tec_3:
+;		CALL	tec_3
+;		JMP		fim_p_teclado
+;	c_tec_5:
+;		CALL	tec_5
+;		JMP		fim_p_teclado
+;	c_tec_7:
+;		CALL	tec_7
+;		JMP		fim_p_teclado
+;	c_tec_B:
+;		CALL	tec_B
+;		JMP		fim_p_teclado
+;	c_tec_C:
+;		CALL	tec_C
+;		JMP		fim_p_teclado
+;	c_tec_D:
+;		CALL	tec_D
+;		JMP		fim_p_teclado
+;	c_tec_E:
+;		CALL	tec_E
+;		JMP		fim_p_teclado
+;	c_tec_F:
+;		CALL	tec_F
+;		JMP		fim_p_teclado
 
 
   fim_p_teclado:
