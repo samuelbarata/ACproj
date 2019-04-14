@@ -80,7 +80,39 @@ bala:		STRING	0,0,1,1
 SP_final:	TABLE	100H
 SP_inicial:
 
-
+inicio:
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
+		STRING	00H,00H,00H,00H
 
 
 PLACE		0
@@ -98,21 +130,25 @@ inicializacao:
 	MOV		R9,		0
 	MOV		R10,	0
 
-	MOV		R0,		submarino
+	MOV		R0,		inicio		;tudo a 0
+	CALL	ecra				;Apaga todo o conteudo do ecra
+
+	MOV		R0,		submarino	;imagem
 	MOV		R1,		1			;escreve
-	CALL 	imagem
+	CALL 	imagem				;Imprime o submarino
 	MOV		R0,		barco1
-	CALL	imagem
+	CALL	imagem				;Imprime o barco 1
 	MOV		R0,		barco2
-	CALL	imagem
+	CALL	imagem				;Imprime o barco 2
 
 main:
-	CALL	teclado
-	CALL	processa_teclado
+	CALL	teclado				;lê input
+	CALL	processa_teclado	;analisa input
 
-fim:
-	JMP		main
 
+
+	JMP		main				;repete o ciclo principal
+fim:JMP		fim					;acaba o programa
 
 
 
@@ -537,7 +573,38 @@ movimento:
 	POP		R0
 	RET
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		ecra													│
+; │	DESCRICAO:	Recebe o endereço de um desenho de um ecra inteiro		│
+; │				e desenha-o todo, mais eficiente que rotina imagem		│
+; │																		│
+; │	INPUT:		R0 endereço STRING										│
+; │	OUTPUT:		Desenho no pixelscreen									│
+; ╰─────────────────────────────────────────────────────────────────────╯
+ecra:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	MOV		R1,		PSCREEN
+	MOV		R2,		0
+	MOV		R4, 	128;nºbytes ecra
+	ecra_ciclo:
+		MOV		R3,		[R0]	;byte a escrever
+		MOV		[R1],	R3		;escreve o byte
+		ADD		R2,		1		;contador
+		ADD		R0,		2		;avança para o byte seguinte memoria
+		ADD		R1,		2		;avança para o byte seguinte ecra
+		CMP		R2,		R4
+		JNZ		ecra_ciclo
 
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
 
 
 
