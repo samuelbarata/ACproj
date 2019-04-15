@@ -29,6 +29,9 @@ submarinoYI		EQU	20
 
 PLACE		1000H
 
+estado_jogo:
+			WORD	0				;0 == decorrer; outro == ⬣
+
 key_press:	WORD	0				;tecla primida
 			WORD	0				;se no instante anterior uma tecla tinha cido primida
 
@@ -142,7 +145,7 @@ fim_jogo:
 		STRING 00H, 24H, 90H, 48H
 		STRING 00H, 24H, 96H, 48H
 		STRING 01H, 24H, 92H, 48H
-		STRING 00H,	195, 0CH, 30H		;quando meto C3H dá erro	STRING 00H, C3H, 0CH, 30H
+		STRING 00H,	195, 0CH, 30H																						;quando meto C3H dá erro	STRING 00H, C3H, 0CH, 30H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -166,8 +169,10 @@ main:
 fim_main:
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
-
-fim:JMP		fim					;acaba o programa
+fim:
+	CALL	teclado
+	CALL	processa_teclado
+	JMP		fim					;acaba o programa
 
 
 
@@ -452,60 +457,20 @@ processa_teclado:
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
+
+	MOV		R4,		B
+	CMP		R2,		R4
+	JZ		inicializacao
+
+	MOV		R4,		F
+	CMP		R2,		R4
+	JZ		fim_main
+
+	MOV		R0,		estado_jogo
+	MOV		R0,		[R0]
+	AND		R0,		R0
+	JNZ		fim_p_teclado		;se o jogo estiver parado nao faz os movimentos do submarino
 	CALL	movimento
-	JMP		fim_p_teclado
-
-
-	;MOV		R4,		3
-	;CMP		R2,		R4
-	;JZ		c_tec_3
-	;MOV		R4,		5
-	;CMP		R2,		R4
-	;JZ		c_tec_5
-	;MOV		R4,		7
-	;CMP		R2,		R4
-	;JZ		c_tec_7
-	;MOV		R4,		B
-	;CMP		R2,		R4
-	;JZ		c_tec_B
-	;MOV		R4,		C
-	;CMP		R2,		R4
-	;JZ		c_tec_C
-	;MOV		R4,		D
-	;CMP		R2,		R4
-	;JZ		c_tec_D
-	;MOV		R4,		E
-	;CMP		R2,		R4
-	;JZ		c_tec_E
-	;MOV		R4,		F
-	;CMP		R2,		R4
-	;JZ		c_tec_F
-
-
-;	c_tec_3:
-;		CALL	tec_3
-;		JMP		fim_p_teclado
-;	c_tec_5:
-;		CALL	tec_5
-;		JMP		fim_p_teclado
-;	c_tec_7:
-;		CALL	tec_7
-;		JMP		fim_p_teclado
-;	c_tec_B:
-;		CALL	tec_B
-;		JMP		fim_p_teclado
-;	c_tec_C:
-;		CALL	tec_C
-;		JMP		fim_p_teclado
-;	c_tec_D:
-;		CALL	tec_D
-;		JMP		fim_p_teclado
-;	c_tec_E:
-;		CALL	tec_E
-;		JMP		fim_p_teclado
-;	c_tec_F:
-;		CALL	tec_F
-;		JMP		fim_p_teclado
 
 
   fim_p_teclado:
@@ -661,6 +626,10 @@ reset_all:
 	CALL	imagem				;Imprime o barco 1
 	MOV		R0,		barco2
 	CALL	imagem				;Imprime o barco 2
+
+	MOV		R0,		estado_jogo
+	MOV		R1,		0
+	MOV		[R0]	R1			;ativa o jogo
 
 	MOV		R0,		0
 	MOV		R1,		0
