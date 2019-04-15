@@ -167,6 +167,9 @@ main:
 
 	JMP		main				;repete o ciclo principal
 fim_main:
+	MOV		R0,		estado_jogo
+	MOV		R1,		-1
+	MOV		[R0],	R1			;para o jogo
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
 fim:
@@ -472,12 +475,7 @@ processa_teclado:
 	CMP		R2,		R4
 	JZ		JUMP_MEDIO2			;JMP	fim_main
 
-	MOV		R0,		estado_jogo
-	MOV		R0,		[R0]
-	AND		R0,		R0
-	JNZ		fim_p_teclado		;se o jogo estiver parado nao faz os movimentos do submarino
 	CALL	movimento
-
 
   fim_p_teclado:
 	POP		R10
@@ -524,6 +522,11 @@ movimento:
 	MOV		R3,		[R3]	;buscar movimentação sub
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
+	;verifica estado do jogo
+	MOV		R0,		estado_jogo
+	MOV		R0,		[R0]
+	AND		R0,		R0
+	JNZ		fim_movimento		;se o jogo estiver parado nao faz os movimentos do submarino
 
 	MOV		R0,		submarino	;memoria do submarino
 	MOV		R1,		0	;apagar
