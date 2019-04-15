@@ -342,6 +342,12 @@ display:
 	RET
 
 
+;; JUMPs intermedios pois eram demasiado grandes
+JUMP_MEDIO1:JMP		inicializacao
+JUMP_MEDIO2:JMP		fim_main
+;;
+
+
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		imagem													│
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
@@ -458,13 +464,13 @@ processa_teclado:
 	JZ		fim_p_teclado
 
 
-	MOV		R4,		B
+	MOV		R4,		11			;B
 	CMP		R2,		R4
-	JZ		inicializacao
+	JZ		JUMP_MEDIO1			;JMP	inicializacao
 
-	MOV		R4,		F
+	MOV		R4,		15			;F
 	CMP		R2,		R4
-	JZ		fim_main
+	JZ		JUMP_MEDIO2			;JMP	fim_main
 
 	MOV		R0,		estado_jogo
 	MOV		R0,		[R0]
@@ -629,7 +635,7 @@ reset_all:
 
 	MOV		R0,		estado_jogo
 	MOV		R1,		0
-	MOV		[R0]	R1			;ativa o jogo
+	MOV		[R0],	R1			;ativa o jogo
 
 	MOV		R0,		0
 	MOV		R1,		0
