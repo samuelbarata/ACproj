@@ -23,6 +23,8 @@ TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
+submarinoXI		EQU	9		;posição inicial submarino
+submarinoYI		EQU	20
 
 
 PLACE		1000H
@@ -48,12 +50,12 @@ table_char:	STRING	-1,	-1			;0	↖︎
 			STRING	0,	NMEXESUB	;F	⬣
 
 
-submarino:	STRING	13,23,6,3		;x, y, Δx, Δy
+submarino:	STRING	9,20,6,3		;x, y, Δx, Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
 
-barco1:		STRING	4,4,8,6
+barco1:		STRING	1,2,8,6			;x, y, Δx, Δy
 			STRING	0,1,0,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
@@ -61,19 +63,19 @@ barco1:		STRING	4,4,8,6
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	20,5,6,5
+barco2:		STRING	20,3,6,5		;x, y, Δx, Δy
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	1,1,1,1,1,1
 			STRING	0,1,1,1,1,0
 
-torpedo:	STRING	0,0,1,3
+torpedo:	STRING	10,16,1,3		;x, y, Δx, Δy
 			STRING	1
 			STRING	1
 			STRING	1
 
-bala:		STRING	0,0,1,1
+bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 			STRING	1
 
 
@@ -81,73 +83,90 @@ SP_final:	TABLE	100H
 SP_inicial:
 
 inicio:
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
-		STRING	00H,00H,00H,00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+
+
+
+fim_jogo:
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 07H, 1CH, 6CH, 00H
+		STRING 04H, 08H, 54H, 00H
+		STRING 06H, 08H, 54H, 00H
+		STRING 04H, 08H, 44H, 00H
+		STRING 04H, 08H, 44H, 00H
+		STRING 04H, 1CH, 44H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 23H, 0CH, 30H
+		STRING 00H, 24H, 90H, 48H
+		STRING 00H, 24H, 90H, 48H
+		STRING 00H, 24H, 96H, 48H
+		STRING 01H, 24H, 92H, 48H
+		STRING 00H,	195, 0CH, 30H		;quando meto C3H dá erro	STRING 00H, C3H, 0CH, 30H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
 
 
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
-	MOV		R0,		0
-	MOV		R1,		0
-	MOV		R2,		0
-	MOV		R3,		0
-	MOV		R4,		0
-	MOV		R5,		0
-	MOV		R6,		0
-	MOV		R7,		0
-	MOV		R8,		0
-	MOV		R9,		0
-	MOV		R10,	0
-
-	MOV		R0,		inicio		;tudo a 0
-	CALL	ecra				;Apaga todo o conteudo do ecra
-
-	MOV		R0,		submarino	;imagem
-	MOV		R1,		1			;escreve
-	CALL 	imagem				;Imprime o submarino
-	MOV		R0,		barco1
-	CALL	imagem				;Imprime o barco 1
-	MOV		R0,		barco2
-	CALL	imagem				;Imprime o barco 2
+	CALL	reset_all
 
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
 
-
-
 	JMP		main				;repete o ciclo principal
+fim_main:
+	MOV		R0,		fim_jogo
+	CALL	ecra				;imprime ecra fim de jogo
+
 fim:JMP		fim					;acaba o programa
 
 
@@ -577,6 +596,7 @@ movimento:
 ; │	ROTINA:		ecra													│
 ; │	DESCRICAO:	Recebe o endereço de um desenho de um ecra inteiro		│
 ; │				e desenha-o todo, mais eficiente que rotina imagem		│
+; │				dado que imprime byte a byte							│
 ; │																		│
 ; │	INPUT:		R0 endereço STRING										│
 ; │	OUTPUT:		Desenho no pixelscreen									│
@@ -589,16 +609,15 @@ ecra:
 	PUSH	R4
 	MOV		R1,		PSCREEN
 	MOV		R2,		0
-	MOV		R4, 	128;nºbytes ecra
+	MOV		R4, 	40H			;nº bytes ecra
 	ecra_ciclo:
 		MOV		R3,		[R0]	;byte a escrever
 		MOV		[R1],	R3		;escreve o byte
 		ADD		R2,		1		;contador
 		ADD		R0,		2		;avança para o byte seguinte memoria
 		ADD		R1,		2		;avança para o byte seguinte ecra
-		CMP		R2,		R4
+		CMP		R2,		R4		;verifica se já chegou ao fim do ecra [128 bytes]
 		JNZ		ecra_ciclo
-
 	POP		R4
 	POP		R3
 	POP		R2
@@ -607,10 +626,55 @@ ecra:
 	RET
 
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		reset_all												│
+; │	DESCRICAO:	No inicio do jogo faz reset a tudo						│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		Registos, Displays										│
+; ╰─────────────────────────────────────────────────────────────────────╯
+reset_all:
+
+	MOV		R1,		0
+	MOV		R0,		inicio		;tudo a 0
+	CALL	ecra				;Apaga todo o conteudo do ecra
+
+	MOV		R0,		DISPLAY1
+	MOVB	[R0],	R1			;ecreve 0
+	MOV		R0,		DISPLAY2
+	MOVB	[R0],	R1			;escreve 0
 
 
+	MOV		R0,		submarino
+	MOV		R1,		submarinoXI	;x inicial
+	MOVB	[R0],	R1
+
+	MOV		R1,		submarinoYI	;y inicial
+	ADD		R0,		1
+	MOVB	[R0],	R1
 
 
+	MOV		R0,		submarino	;imagem
+	MOV		R1,		1			;escreve
+	CALL 	imagem				;Imprime o submarino
+	MOV		R0,		barco1
+	CALL	imagem				;Imprime o barco 1
+	MOV		R0,		barco2
+	CALL	imagem				;Imprime o barco 2
+
+	MOV		R0,		0
+	MOV		R1,		0
+	MOV		R2,		0
+	MOV		R3,		0
+	MOV		R4,		0
+	MOV		R5,		0
+	MOV		R6,		0
+	MOV		R7,		0
+	MOV		R8,		0
+	MOV		R9,		0
+	MOV		R10,	0
+
+	RET
 
 
 
