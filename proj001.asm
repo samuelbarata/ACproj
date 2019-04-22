@@ -167,7 +167,8 @@ inicializacao:
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
-	CALL	barcos				;os barcos realizam ação
+	CALL	relogios
+	
 
 	JMP		main				;repete o ciclo principal
 fim_main:
@@ -606,12 +607,12 @@ ecra:
 	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		barcos													│
+; │	ROTINA:		relogios												│
 ; │	DESCRICAO:															│
-; │	INPUT:		relógio 1 [PIN]											│
+; │	INPUT:		relógio 1/2 [PIN]										│
 ; │	OUTPUT:																│
 ; ╰─────────────────────────────────────────────────────────────────────╯
-barcos:
+relogios:
 	PUSH	R0
 	PUSH	R1
 	PUSH	R2
@@ -625,13 +626,18 @@ barcos:
 	PUSH	R10
 
 	MOV		R0,		PIN
+	MOV		R3,		DISPLAY2
 	MOVB	R0,		[R0]
-	MOV		R1,		00010000b	;relogio 1
-	AND		R0,		R1			;isola os bits do relogio 1
-	SHR		R0,		4
-	MOV		R2,		DISPLAY2
-	MOVB	[R2],	R0
-
+	MOV		R1,		00010000b	;relogio 1 mascara
+	MOV		R2,		00100000b	;relogio 2 mascara
+	AND		R1,		R0			;relogio 1
+	AND		R2,		R0			;relogio 2
+	SHR		R1,		4
+	SHR		R2,		1
+	MOV		R0,		0
+	ADD		R0,		R1
+	ADD		R0,		R2
+	MOVB	[R3],	R0
 
 	POP		R10
 	POP		R9
@@ -704,7 +710,7 @@ reset_all:
 
 
 
-;-----------------------------
+;----------NADA-------------------
 rot0:
 	PUSH	R10
 	PUSH	R9
