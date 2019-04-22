@@ -19,7 +19,7 @@
 DISPLAY1		EQU 0A000H  ; Displays hexa			(periférico POUT-1)
 TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
 DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
-PIN				EQU 0E000H  ; endereço do teclado	(periférico PIN)
+PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
@@ -28,6 +28,7 @@ submarinoYI		EQU	20
 
 
 PLACE		1000H
+;DEBUG:		STRING	0
 estado_jogo:
 			WORD	0				;0 == decorrer; outro == ⬣
 
@@ -212,6 +213,8 @@ teclado:
  	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi primida e guarda -1 na memória
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
+	MOV		R4,		00001111b	;mascara bits teclado
+	AND		R3,		R4		;isola os bits do teclado
 	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
 	JZ 		ciclo_tec		; nenhuma tecla premida
 	MOV		R4, 	R3		; guardar tecla premida em registo
@@ -622,7 +625,12 @@ barcos:
 	PUSH	R10
 
 	MOV		R0,		PIN
-
+	MOVB	R0,		[R0]
+	MOV		R1,		00010000b	;relogio 1
+	AND		R0,		R1			;isola os bits do relogio 1
+	SHR		R0,		4
+	MOV		R2,		DISPLAY2
+	MOVB	[R2],	R0
 
 
 	POP		R10
@@ -698,32 +706,12 @@ reset_all:
 
 ;-----------------------------
 rot0:
-	PUSH	R2
-	PUSH	R1				; guarda registo de trabalho	
-	MOV		R1, DISPLAY2	; endereço do porto do display
-	MOV		R2,	PIN			;clock 1
-	MOV		R0,	[R1]
-	ADD		R0, 1			; incrementa contador
-	MOVB 	[R1], R0		; actualiza display
-	POP		R1				; restaura registo de trabalho
-	POP		R2
+	PUSH	R10
+	PUSH	R9
+	MOV		R10,	DISPLAY2
+	MOVB	R9,		[R10]
+	ADD		R9,		1
+	MOVB	[R10],	R9
+	POP		R9
+	POP		R10
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
