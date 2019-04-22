@@ -19,7 +19,7 @@
 DISPLAY1		EQU 0A000H  ; Displays hexa			(periférico POUT-1)
 TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
 DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
-TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
+PIN				EQU 0E000H  ; endereço do teclado	(periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
@@ -28,7 +28,6 @@ submarinoYI		EQU	20
 
 
 PLACE		1000H
-
 estado_jogo:
 			WORD	0				;0 == decorrer; outro == ⬣
 
@@ -155,15 +154,19 @@ fim_jogo:
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
+; Tabela de vectores de interrupção
+tab:		WORD	rot0
 
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
+	MOV		BTE,	tab
 	CALL	reset_all
 
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
+	CALL	barcos				;os barcos realizam ação
 
 	JMP		main				;repete o ciclo principal
 fim_main:
@@ -183,7 +186,7 @@ fim:
 ; │	ROTINA:		teclado													│
 ; │	DESCRICAO:	Verifica que tecla foi primida e guarda na memoria;		│
 ; │				caso nenhuma tenja cido primida guarda -1				│
-; │	OUTPUT:		Tecla para memoria 'tec_out'							│
+; │	OUTPUT:		Tecla para memoria 'key_press'							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 
 teclado:
@@ -200,7 +203,7 @@ teclado:
 
 	MOV 	R5, 	TEC_IN		; R5 com endereço de memória Input teclado 
 	MOV		R1, 	LINHA		; testar a linha
-	MOV		R2, 	TEC_OUT		; R2 com o endereço do periférico
+	MOV		R2, 	PIN			; R2 com o endereço do periférico
 	MOV 	R6, 	key_press	; Onde se guarda o output do teclado
 	MOV 	R7, 	-1			; Valor caso nenhuma tecla seja primida
 
@@ -599,6 +602,43 @@ ecra:
 	POP		R0
 	RET
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		barcos													│
+; │	DESCRICAO:															│
+; │	INPUT:		relógio 1 [PIN]											│
+; │	OUTPUT:																│
+; ╰─────────────────────────────────────────────────────────────────────╯
+barcos:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R0,		PIN
+
+
+
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		reset_all												│
@@ -656,7 +696,18 @@ reset_all:
 
 
 
-
+;-----------------------------
+rot0:
+	PUSH	R2
+	PUSH	R1				; guarda registo de trabalho	
+	MOV		R1, DISPLAY2	; endereço do porto do display
+	MOV		R2,	PIN			;clock 1
+	MOV		R0,	[R1]
+	ADD		R0, 1			; incrementa contador
+	MOVB 	[R1], R0		; actualiza display
+	POP		R1				; restaura registo de trabalho
+	POP		R2
+	RET
 
 
 
