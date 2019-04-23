@@ -155,19 +155,19 @@ fim_jogo:
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
-; Tabela de vectores de interrupção
+; Tabela de vectores de interrupção																						[n percebo isto]
 tab:		WORD	rot0
 
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
-	MOV		BTE,	tab
-	CALL	reset_all
+	MOV		BTE,	tab			;interrupções																			[n percebo isto]
+	CALL	reset_all			;faz reset a todas as variaveis do jogo
 
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
-	CALL	relogios
+	CALL	relogios			;verifica ciclos de relogio
 	
 
 	JMP		main				;repete o ciclo principal
@@ -625,8 +625,8 @@ relogios:
 	PUSH	R9
 	PUSH	R10
 
-	MOV		R0,		PIN
-	MOV		R3,		DISPLAY2
+	MOV		R0,		PIN			;endereço dos relogios
+	MOV		R3,		DISPLAY2	;endereço dos displays extra															Debug
 	MOVB	R0,		[R0]
 	MOV		R1,		00010000b	;relogio 1 mascara
 	MOV		R2,		00100000b	;relogio 2 mascara
@@ -637,7 +637,7 @@ relogios:
 	MOV		R0,		0
 	ADD		R0,		R1
 	ADD		R0,		R2
-	MOVB	[R3],	R0
+	MOVB	[R3],	R0			;																						Debug
 
 	POP		R10
 	POP		R9
@@ -694,7 +694,7 @@ reset_all:
 	MOV		R1,		0
 	MOV		[R0],	R1			;ativa o jogo
 
-	MOV		R0,		0
+	MOV		R0,		0			;apaga todo o conteudo dos registos
 	MOV		R1,		0
 	MOV		R2,		0
 	MOV		R3,		0
@@ -710,7 +710,7 @@ reset_all:
 
 
 
-;----------NADA-------------------
+;----------interrupções?-------------------																				Não percebo
 rot0:
 	PUSH	R10
 	PUSH	R9
