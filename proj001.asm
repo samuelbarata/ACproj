@@ -209,6 +209,10 @@ teclado:
  	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi primida e guarda -1 na memória
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
+
+	MOV		R4,		00001111b	;mascara bits teclado
+	AND		R3,		R4		;isola os bits do teclado
+	
 	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
 	JZ 		ciclo_tec		; nenhuma tecla premida
 	MOV		R4, 	R3		; guardar tecla premida em registo
