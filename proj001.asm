@@ -626,19 +626,20 @@ relogios:
 	PUSH	R10
 
 	MOV		R0,		PIN			;endereço dos relogios
-	MOV		R3,		DISPLAY2	;endereço dos displays extra															Debug
 	MOVB	R0,		[R0]
 	MOV		R1,		00010000b	;relogio 1 mascara
 	MOV		R2,		00100000b	;relogio 2 mascara
 	AND		R1,		R0			;relogio 1
 	AND		R2,		R0			;relogio 2
+clk1:
 	SHR		R1,		4
-	SHR		R2,		1
-	MOV		R0,		0
-	ADD		R0,		R1
-	ADD		R0,		R2
-	MOVB	[R3],	R0			;																						Debug
+	JZ		clk2
 
+
+clk2:
+	SHR		R2,		5
+
+fim_relogios:
 	POP		R10
 	POP		R9
 	POP		R8
