@@ -7,9 +7,6 @@
 ;│	Vasyl Lanko				93622		│
 ;╰──────────────────────────────────────╯
 
-;																														│Comentários debug para a direita do caracter 120
-
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Constantes															│
@@ -31,6 +28,7 @@ PLACE		1000H
 
 key_press:	WORD	0				;tecla primida
 			WORD	0				;se no instante anterior uma tecla tinha cido primida
+			;MOVBS não fununciona por isso usamos words em ves de strings
 
 table_char:	STRING	-1,	-1			;0	↖︎
 			STRING	0,	-1			;1	↑
@@ -82,7 +80,7 @@ bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 SP_final:	TABLE	100H
 SP_inicial:
 
-inicio:
+inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -118,7 +116,7 @@ inicio:
 
 
 
-fim_jogo:
+fim_jogo:							;ecrã dim do jogo
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -152,13 +150,9 @@ fim_jogo:
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
-; Tabela de vectores de interrupção																						[n percebo isto]
-tab:		WORD	rot0
-
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
-	MOV		BTE,	tab			;interrupções																			[n percebo isto]
 	CALL	reset_all			;faz reset a todas as variaveis do jogo
 
 main:
@@ -169,8 +163,6 @@ main:
 	JZ		fim_main
 	CMP		R0,	1
 	JZ 		inicializacao
-
-	CALL	relogios			;verifica ciclos de relogio
 	
 	JMP		main				;repete o ciclo principal
 fim_main:
@@ -181,7 +173,7 @@ fim_main:
 fim:
 	CALL	teclado
 	CALL	processa_teclado
-	CMP		R0,		1			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	CMP		R0,		1			;0 == ⬣, 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
 
@@ -218,7 +210,7 @@ teclado:
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
 	MOV		R4,		00001111b	;mascara bits teclado
-	AND		R3,		R4		;isola os bits do teclado
+	AND		R3,		R4		;isola os bits do teclado dos do relógio
 	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
 	JZ 		ciclo_tec		; nenhuma tecla premida
 	MOV		R4, 	R3		; guardar tecla premida em registo
@@ -255,7 +247,7 @@ teclado:
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
 	JNZ		tecla_anulada
 
-	tecla_valida:
+	tecla_valida:			;guarda a tecla em memoria se a mesma for válida
 	MOV		[R6],	R7
 	ADD		R6,		2
 	MOV		R7,		1		;escreve 1 para por na memoria
@@ -297,18 +289,15 @@ teclado:
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
-  	PUSH	R0
-	PUSH	R1
-	PUSH	R2
+  	PUSH	R0			;contem x
+	PUSH	R1			;contem y
+	PUSH	R2			;contem o estado
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
 	PUSH	R7
 	PUSH	R10
   processa:					;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
-  	;R0,	x
-  	;R1,	y
-  	;R2,	estado
 	MOV		R4,		PSCREEN		;endereço base do display
 	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
@@ -469,14 +458,13 @@ processa_teclado:
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
-
 	MOV		R4,		11			;B
 	CMP		R2,		R4
 	JZ		init_p				;inicializacao
 
 	MOV		R4,		15			;F
 	CMP		R2,		R4
-	JZ		stop_p				;fim jogo
+	JZ		stop_p				;fim do jogo
 
 	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
 	JZ		fim_p_teclado
@@ -485,13 +473,10 @@ processa_teclado:
 	JMP		fim_p_teclado
 
   stop_p:
-	MOV		R0,		0
+	MOV		R0,		0			;atualiza o estado do jogo para parado
 	JMP		fim_p_teclado
   init_p:
-	MOV		R0,		1
-
-
-
+	MOV		R0,		1			;atualiza o estado do jogo para inicialização
 
   fim_p_teclado:
 	POP		R10
@@ -547,20 +532,18 @@ movimento:
 	;move o submarino
 	MOVB	R3,		[R4]
 	MOVB	R5,		[R0]
-	ADD		R5,		R3		;posição x + 
+	ADD		R5,		R3		;posição x + R3
 	MOVB	[R0],	R5
 	ADD		R0,		1
 	ADD		R4,		1
 	MOVB	R3,		[R4]
 	MOVB	R5,		[R0]
-	ADD		R5,		R3		;posição y +
+	ADD		R5,		R3		;posição y + R3
 	MOVB	[R0],	R5
 
 	MOV		R0,		submarino	;imagem a escrever
 	MOV		R1,		1			;escrever
 	CALL	imagem		;escreve o submarino
-
-
 
   fim_movimento:
 	POP		R10
@@ -575,6 +558,7 @@ movimento:
 	POP		R1
 	POP		R0
 	RET
+
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		ecra													│
@@ -608,54 +592,6 @@ ecra:
 	POP		R1
 	POP		R0
 	RET
-
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		relogios												│
-; │	DESCRICAO:															│
-; │	INPUT:		relógio 1/2 [PIN]										│
-; │	OUTPUT:																│
-; ╰─────────────────────────────────────────────────────────────────────╯
-relogios:
-	PUSH	R0
-	PUSH	R1
-	PUSH	R2
-	PUSH	R3
-	PUSH	R4
-	PUSH	R5
-	PUSH	R6
-	PUSH	R7
-	PUSH	R8
-	PUSH	R9
-	PUSH	R10
-
-	MOV		R0,		PIN			;endereço dos relogios
-	MOVB	R0,		[R0]
-	MOV		R1,		00010000b	;relogio 1 mascara
-	MOV		R2,		00100000b	;relogio 2 mascara
-	AND		R1,		R0			;relogio 1
-	AND		R2,		R0			;relogio 2
-clk1:
-	SHR		R1,		4
-	JZ		clk2
-
-
-clk2:
-	SHR		R2,		5
-
-fim_relogios:
-	POP		R10
-	POP		R9
-	POP		R8
-	POP		R7
-	POP		R6
-	POP		R5
-	POP		R4
-	POP		R3
-	POP		R2
-	POP		R1
-	POP		R0
-	RET
-
 
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
