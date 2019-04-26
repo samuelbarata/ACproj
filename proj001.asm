@@ -28,9 +28,6 @@ submarinoYI		EQU	20
 
 
 PLACE		1000H
-;DEBUG:		STRING	0
-estado_jogo:
-			WORD	0				;0 == decorrer; outro == ⬣
 
 key_press:	WORD	0				;tecla primida
 			WORD	0				;se no instante anterior uma tecla tinha cido primida
@@ -167,16 +164,20 @@ inicializacao:
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
+	
+	AND		R0,	R0
+	JZ		fim_main
+	CMP		R0,	1
+	JZ 		inicializacao
+
 	CALL	relogios			;verifica ciclos de relogio
 	
-
 	JMP		main				;repete o ciclo principal
 fim_main:
-	MOV		R0,		estado_jogo
-	MOV		R1,		-1
-	MOV		[R0],	R1			;para o jogo
+	PUSH	R0					;guarda o estado do jogo na pilha
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
+	POP		R0
 fim:
 	CALL	teclado
 	CALL	processa_teclado
@@ -352,12 +353,6 @@ display:
 	RET
 
 
-;; JUMPs intermedios pois eram demasiado grandes
-JUMP_MEDIO1:JMP		inicializacao
-JUMP_MEDIO2:JMP		fim_main
-;;
-
-
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		imagem													│
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
@@ -445,7 +440,7 @@ main_imagem:
 ; │				temos de verificar se a ultima tecla primida foi		│
 ; │				igual ou não											│
 ; │	INPUT:		0														│
-; │	OUTPUT:		0														│
+; │	OUTPUT:		R0, estado do jogo										│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
 ; │	4 ←		5		6 →		7	│
@@ -454,7 +449,6 @@ main_imagem:
 ; ╰─────────────────────────────╯
 processa_teclado:
   init_p_teclado:
-	PUSH	R0
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
@@ -476,13 +470,25 @@ processa_teclado:
 
 	MOV		R4,		11			;B
 	CMP		R2,		R4
-	JZ		JUMP_MEDIO1			;JMP	inicializacao
+	JZ		init_p				;inicializacao
 
 	MOV		R4,		15			;F
 	CMP		R2,		R4
-	JZ		JUMP_MEDIO2			;JMP	fim_main
+	JZ		stop_p				;fim jogo
+
+	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
+	JZ		fim_p_teclado
 
 	CALL	movimento
+
+  stop_p:
+	MOV		R0,		0
+	JMP		fim_p_teclado
+  init_p:
+	MOV		R0,		1
+
+
+
 
   fim_p_teclado:
 	POP		R10
@@ -495,7 +501,6 @@ processa_teclado:
 	POP		R3
 	POP		R2
 	POP		R1
-	POP		R0
 	RET
 
 
@@ -529,11 +534,6 @@ movimento:
 	MOV		R3,		[R3]	;buscar movimentação sub
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
-	;verifica estado do jogo
-	MOV		R0,		estado_jogo
-	MOV		R0,		[R0]
-	AND		R0,		R0
-	JNZ		fim_movimento		;se o jogo estiver parado nao faz os movimentos do submarino
 
 	MOV		R0,		submarino	;memoria do submarino
 	MOV		R1,		0	;apagar
@@ -695,8 +695,8 @@ reset_all:
 	MOV		R1,		0
 	MOV		[R0],	R1			;ativa o jogo
 
-	MOV		R0,		0			;apaga todo o conteudo dos registos
-	MOV		R1,		0
+	MOV		R0,		2			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	MOV		R1,		0			;apaga todo o conteudo dos registos
 	MOV		R2,		0
 	MOV		R3,		0
 	MOV		R4,		0
