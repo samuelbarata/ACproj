@@ -116,7 +116,7 @@ inicio:								;ecrã apagado
 
 
 
-fim_jogo:							;ecrã dim do jogo
+fim_jogo:							;ecrã fim do jogo
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
