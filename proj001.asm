@@ -181,6 +181,8 @@ fim_main:
 fim:
 	CALL	teclado
 	CALL	processa_teclado
+	CMP		R0,		1			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	JZ		inicializacao
 	JMP		fim					;acaba o programa
 
 
@@ -480,6 +482,7 @@ processa_teclado:
 	JZ		fim_p_teclado
 
 	CALL	movimento
+	JMP		fim_p_teclado
 
   stop_p:
 	MOV		R0,		0
@@ -690,10 +693,6 @@ reset_all:
 	CALL	imagem				;Imprime o barco 1
 	MOV		R0,		barco2
 	CALL	imagem				;Imprime o barco 2
-
-	MOV		R0,		estado_jogo
-	MOV		R1,		0
-	MOV		[R0],	R1			;ativa o jogo
 
 	MOV		R0,		2			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
 	MOV		R1,		0			;apaga todo o conteudo dos registos
