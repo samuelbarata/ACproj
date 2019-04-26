@@ -80,6 +80,9 @@ bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 SP_final:	TABLE	100H
 SP_inicial:
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │ ecrãs																│
+; ╰─────────────────────────────────────────────────────────────────────╯
 inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -113,8 +116,6 @@ inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
-
-
 
 fim_jogo:							;ecrã fim do jogo
 		STRING 00H, 00H, 00H, 00H
@@ -160,7 +161,7 @@ main:
 	CALL	processa_teclado	;analisa input
 	
 	AND		R0,	R0
-	JZ		fim_main
+	JZ		fim_main			;verifica estado jogo
 	CMP		R0,	1
 	JZ 		inicializacao
 	
@@ -169,10 +170,10 @@ fim_main:
 	PUSH	R0					;guarda o estado do jogo na pilha
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
-	POP		R0
+	POP		R0					;retorna o estado do jogo
 fim:
 	CALL	teclado
-	CALL	processa_teclado
+	CALL	processa_teclado	;verifica se a tecla de recomeçar foi primida
 	CMP		R0,		1			;0 == ⬣, 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
@@ -182,10 +183,11 @@ fim:
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		teclado													│
 ; │	DESCRICAO:	Verifica que tecla foi primida e guarda na memoria;		│
-; │				caso nenhuma tenja cido primida guarda -1				│
+; │				caso nenhuma tenha cido primida guarda -1				│
+; │																		│
+; │	INPUT:		periférico PIN											│
 ; │	OUTPUT:		Tecla para memoria 'key_press'							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
-
 teclado:
   init_teclado:
   	PUSH	R0
@@ -284,8 +286,8 @@ teclado:
 ; │	ROTINA:		display									   0┌───────▷ X	│
 ; │	DESCRICAO:	Altera o estado de 1 pixel					│			│
 ; │				endereços 8000H - 807FH						│			│
-; │	INPUT:		coordenadas XR0, YR1, estado do pixelR2		│			│
-; │	OUTPUT:		Pixel no pixelscreen						▽ Y			│
+; │	INPUT:		Coordenadas X-R0, Y-R1, estado do pixel-R2	│			│
+; │	OUTPUT:		Periférico pixelscreen						▽ Y			│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
@@ -349,8 +351,8 @@ display:
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
 ; │				Correspondente											│
 ; │																		│
-; │	INPUT:		R0 endereço STRING; R1 escreve/apaga					│
-; │	OUTPUT:		Desenho no pixelscreen									│
+; │	INPUT:		R0 endereço STRING; R1 1-escreve/0-apaga				│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 imagem:
   init_imagem:
@@ -427,11 +429,13 @@ main_imagem:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		processa_teclado										│
-; │	DESCRICAO:	analisa o que fazer com base no input do teclado		│
+; │	DESCRICAO:	Analisa o que fazer com base no input do teclado		│
 ; │				temos de verificar se a ultima tecla primida foi		│
 ; │				igual ou não											│
-; │	INPUT:		0														│
+; │																		│
+; │	INPUT:		Memória 'key_press'										│
 ; │	OUTPUT:		R0, estado do jogo										│
+; │	DESTROI:	R0														│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
 ; │	4 ←		5		6 →		7	│
@@ -469,7 +473,7 @@ processa_teclado:
 	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
 	JZ		fim_p_teclado
 
-	CALL	movimento
+	CALL	movimento			;movimenta submarino
 	JMP		fim_p_teclado
 
   stop_p:
@@ -495,11 +499,10 @@ processa_teclado:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		movimento												│
-; │	DESCRICAO:	chamada quando a tecla F é premida						│
-; │				Correspondente											│
+; │	DESCRICAO:	Movimenta o submarino									│
 ; │																		│
 ; │	INPUT:		tecla premida em R2										│
-; │	OUTPUT:		N/A														│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 movimento:
 	PUSH	R0
@@ -523,27 +526,31 @@ movimento:
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
 
+	CALL	verifica_movimentos	;verifica se o submarino vai sair do ecrã se o movimento acontecer
+	AND		R1,		R1
+	JZ		fim_movimento
+
 	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
+	MOV		R1,		0			;apagar
+	CALL	imagem				;apaga o submarino
+	MOV		R1,		1			;escrever
 	MOV		R4,		table_char
-	ADD		R4,		R2
+	ADD		R4,		R2			;linha que contem o movimento
 	;move o submarino
-	MOVB	R3,		[R4]
-	MOVB	R5,		[R0]
+	MOVB	R3,		[R4]		;deslocação em x
+	MOVB	R5,		[R0]		;x atual
 	ADD		R5,		R3		;posição x + R3
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	ADD		R4,		1
-	MOVB	R3,		[R4]
-	MOVB	R5,		[R0]
+	MOVB	[R0],	R5		;escreve nova posição
+	ADD		R0,		1			;memoria posição y
+	ADD		R4,		1			;memoria deslocação em y
+	MOVB	R3,		[R4]		;deslocação em y
+	MOVB	R5,		[R0]		;posição y atual
 	ADD		R5,		R3		;posição y + R3
-	MOVB	[R0],	R5
+	MOVB	[R0],	R5		;escreve nova posição
 
 	MOV		R0,		submarino	;imagem a escrever
 	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
+	CALL	imagem			;escreve o submarino
 
   fim_movimento:
 	POP		R10
@@ -567,7 +574,7 @@ movimento:
 ; │				dado que imprime byte a byte							│
 ; │																		│
 ; │	INPUT:		R0 endereço STRING										│
-; │	OUTPUT:		Desenho no pixelscreen									│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 ecra:
 	PUSH	R0
@@ -602,7 +609,6 @@ ecra:
 ; │	OUTPUT:		Registos, Displays										│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 reset_all:
-
 	MOV		R1,		0
 	MOV		R0,		inicio		;tudo a 0
 	CALL	ecra				;Apaga todo o conteudo do ecra
@@ -641,5 +647,71 @@ reset_all:
 	MOV		R8,		0
 	MOV		R9,		0
 	MOV		R10,	0
+	RET
 
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		verifica_movimentos										│
+; │	DESCRICAO:	verifica se o submarino pode mexer ou sai do ecrã		│
+; │																		│
+; │	INPUT:		tecla premida em R2; movimentos em R3 (XXYY)			│
+; │	OUTPUT:		R1 0 = não mexe											│
+; │	DESTROI:	R1, R4, R5, R7											│
+; ╰─────────────────────────────────────────────────────────────────────╯
+verifica_movimentos:
+	PUSH	R0
+	PUSH	R3
+	PUSH	R2
+	PUSH	R9
+	PUSH	R8
+	PUSH	R10
+  init_veri_movi:
+	MOV		R0,		submarino	;memoria do submarino
+	MOV		R10,	32			;tamanho ecra
+	MOV		R7,		00FFH		;
+	ADD		R0,		2			;Δx
+	MOVB	R8,		[R0]		;Δx
+	SUB		R8,		1			;coordenadas começam no 0
+	ADD		R0,		1			;Δy
+	MOVB	R9,		[R0]		;Δy
+	SUB		R9,		1			;coordenadas começam no 0
+	MOV		R0,		submarino
+
+	veri_x:			;0<=x<=31
+		MOVB	R5,		[R0]		;contem coordenada x
+		MOV		R4,		R3			;deslocamento XXYY
+		SHR		R4,		8			;deslocamento 00XX
+		ADD		R5,		R4
+		CMP		R5,		R7			;vê se a coordenada é -1 [sair esquerda ecrã]
+		JZ		fim_veri_nao_move
+		ADD		R5,		R8
+		CMP		R5,		R10			;vê se a coordenada é 32 [sair direita ecrã]	
+		JZ		fim_veri_nao_move
+
+	veri_y:			;0<=y<=31
+		ADD		R0,		1			;
+		MOVB	R5,		[R0]		;coordenada y
+		MOV		R4,		R3			;deslocamento XXYY
+		AND		R4,		R7			;deslocamento 00YY
+
+		ADD		R5,		R4
+		CMP		R5,		R7			;vê se a coordenada é -1 [sair cima ecrã]
+		JZ		fim_veri_nao_move
+		ADD		R5,		R9
+		CMP		R5,		R10			;vê se a coordenada é 32 [sair baixo ecrã]	
+		JZ		fim_veri_nao_move
+	
+  fim_veri_move:
+	MOV		R1,		1
+	JMP		fim_veri_movi
+  fim_veri_nao_move:
+	MOV		R1,		0
+
+  fim_veri_movi:
+  	POP		R10
+  	POP		R8
+  	POP		R9
+	POP		R2
+	POP		R3
+	POP		R0
 	RET
