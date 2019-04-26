@@ -50,7 +50,7 @@ table_char:	STRING	-1,	-1			;0	↖︎
 			STRING	0,	NMEXESUB	;F	⬣
 
 
-submarino:	STRING	9,20,6,3		;x, y, Δx, Δy
+submarino:	STRING	9,20,6,3		;x, y, largura do submarino usamos Δx para simplificar, comprimento Δy
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
