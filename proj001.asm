@@ -19,7 +19,7 @@
 DISPLAY1		EQU 0A000H  ; Displays hexa			(periférico POUT-1)
 TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
 DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
-TEC_OUT			EQU 0E000H  ; endereço do teclado	(periférico PIN)
+PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
@@ -28,9 +28,6 @@ submarinoYI		EQU	20
 
 
 PLACE		1000H
-
-estado_jogo:
-			WORD	0				;0 == decorrer; outro == ⬣
 
 key_press:	WORD	0				;tecla primida
 			WORD	0				;se no instante anterior uma tecla tinha cido primida
@@ -155,26 +152,37 @@ fim_jogo:
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
+; Tabela de vectores de interrupção																						[n percebo isto]
+tab:		WORD	rot0
 
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
-	CALL	reset_all
+	MOV		BTE,	tab			;interrupções																			[n percebo isto]
+	CALL	reset_all			;faz reset a todas as variaveis do jogo
 
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
+	
+	AND		R0,	R0
+	JZ		fim_main
+	CMP		R0,	1
+	JZ 		inicializacao
 
+	CALL	relogios			;verifica ciclos de relogio
+	
 	JMP		main				;repete o ciclo principal
 fim_main:
-	MOV		R0,		estado_jogo
-	MOV		R1,		-1
-	MOV		[R0],	R1			;para o jogo
+	PUSH	R0					;guarda o estado do jogo na pilha
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
+	POP		R0
 fim:
 	CALL	teclado
 	CALL	processa_teclado
+	CMP		R0,		1			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	JZ		inicializacao
 	JMP		fim					;acaba o programa
 
 
@@ -183,7 +191,7 @@ fim:
 ; │	ROTINA:		teclado													│
 ; │	DESCRICAO:	Verifica que tecla foi primida e guarda na memoria;		│
 ; │				caso nenhuma tenja cido primida guarda -1				│
-; │	OUTPUT:		Tecla para memoria 'tec_out'							│
+; │	OUTPUT:		Tecla para memoria 'key_press'							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 
 teclado:
@@ -200,7 +208,7 @@ teclado:
 
 	MOV 	R5, 	TEC_IN		; R5 com endereço de memória Input teclado 
 	MOV		R1, 	LINHA		; testar a linha
-	MOV		R2, 	TEC_OUT		; R2 com o endereço do periférico
+	MOV		R2, 	PIN			; R2 com o endereço do periférico
 	MOV 	R6, 	key_press	; Onde se guarda o output do teclado
 	MOV 	R7, 	-1			; Valor caso nenhuma tecla seja primida
 
@@ -209,10 +217,8 @@ teclado:
  	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi primida e guarda -1 na memória
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
-
 	MOV		R4,		00001111b	;mascara bits teclado
 	AND		R3,		R4		;isola os bits do teclado
-	
 	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
 	JZ 		ciclo_tec		; nenhuma tecla premida
 	MOV		R4, 	R3		; guardar tecla premida em registo
@@ -349,12 +355,6 @@ display:
 	RET
 
 
-;; JUMPs intermedios pois eram demasiado grandes
-JUMP_MEDIO1:JMP		inicializacao
-JUMP_MEDIO2:JMP		fim_main
-;;
-
-
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		imagem													│
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
@@ -442,7 +442,7 @@ main_imagem:
 ; │				temos de verificar se a ultima tecla primida foi		│
 ; │				igual ou não											│
 ; │	INPUT:		0														│
-; │	OUTPUT:		0														│
+; │	OUTPUT:		R0, estado do jogo										│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
 ; │	4 ←		5		6 →		7	│
@@ -451,7 +451,6 @@ main_imagem:
 ; ╰─────────────────────────────╯
 processa_teclado:
   init_p_teclado:
-	PUSH	R0
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
@@ -473,13 +472,26 @@ processa_teclado:
 
 	MOV		R4,		11			;B
 	CMP		R2,		R4
-	JZ		JUMP_MEDIO1			;JMP	inicializacao
+	JZ		init_p				;inicializacao
 
 	MOV		R4,		15			;F
 	CMP		R2,		R4
-	JZ		JUMP_MEDIO2			;JMP	fim_main
+	JZ		stop_p				;fim jogo
+
+	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
+	JZ		fim_p_teclado
 
 	CALL	movimento
+	JMP		fim_p_teclado
+
+  stop_p:
+	MOV		R0,		0
+	JMP		fim_p_teclado
+  init_p:
+	MOV		R0,		1
+
+
+
 
   fim_p_teclado:
 	POP		R10
@@ -492,7 +504,6 @@ processa_teclado:
 	POP		R3
 	POP		R2
 	POP		R1
-	POP		R0
 	RET
 
 
@@ -526,11 +537,6 @@ movimento:
 	MOV		R3,		[R3]	;buscar movimentação sub
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
-	;verifica estado do jogo
-	MOV		R0,		estado_jogo
-	MOV		R0,		[R0]
-	AND		R0,		R0
-	JNZ		fim_movimento		;se o jogo estiver parado nao faz os movimentos do submarino
 
 	MOV		R0,		submarino	;memoria do submarino
 	MOV		R1,		0	;apagar
@@ -603,6 +609,54 @@ ecra:
 	POP		R0
 	RET
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		relogios												│
+; │	DESCRICAO:															│
+; │	INPUT:		relógio 1/2 [PIN]										│
+; │	OUTPUT:																│
+; ╰─────────────────────────────────────────────────────────────────────╯
+relogios:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R0,		PIN			;endereço dos relogios
+	MOVB	R0,		[R0]
+	MOV		R1,		00010000b	;relogio 1 mascara
+	MOV		R2,		00100000b	;relogio 2 mascara
+	AND		R1,		R0			;relogio 1
+	AND		R2,		R0			;relogio 2
+clk1:
+	SHR		R1,		4
+	JZ		clk2
+
+
+clk2:
+	SHR		R2,		5
+
+fim_relogios:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		reset_all												│
@@ -640,12 +694,8 @@ reset_all:
 	MOV		R0,		barco2
 	CALL	imagem				;Imprime o barco 2
 
-	MOV		R0,		estado_jogo
-	MOV		R1,		0
-	MOV		[R0],	R1			;ativa o jogo
-
-	MOV		R0,		0
-	MOV		R1,		0
+	MOV		R0,		2			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	MOV		R1,		0			;apaga todo o conteudo dos registos
 	MOV		R2,		0
 	MOV		R3,		0
 	MOV		R4,		0
@@ -657,26 +707,3 @@ reset_all:
 	MOV		R10,	0
 
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
