@@ -90,7 +90,7 @@ SP_inicial:
 
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │ ecrãns																│
+; │ ecrãs																│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
@@ -126,7 +126,7 @@ inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
-fim_jogo:							;ecrã fim do jog
+fim_jogo:							;ecrã fim do jogo
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -164,14 +164,14 @@ PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
 	MOV		BTE,	tab			;interrupções																			[n percebo isto]
-	CALL	reset_all			;faz reset a todas as variaveis do jogo
+	CALL	reset_all			;faz reset a todas as variaveis, ecrãs, registos
 
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
 	
 	AND		R0,	R0
-	JZ		fim_main
+	JZ		fim_main			;verifica estado jogo
 	CMP		R0,	1
 	JZ 		inicializacao
 
@@ -182,10 +182,10 @@ fim_main:
 	PUSH	R0					;guarda o estado do jogo na pilha
 	MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
-	POP		R0
+	POP		R0					;retorna o estado do jogo
 fim:
-	CALL	teclado
-	CALL	processa_teclado
+	CALL	teclado				
+	CALL	processa_teclado	;verifica se a tecla de recomeçar foi primida
 	CMP		R0,		1			;0 == ⬣; 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
@@ -195,7 +195,9 @@ fim:
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		teclado													│
 ; │	DESCRICAO:	Verifica que tecla foi primida e guarda na memoria;		│
-; │				caso nenhuma tenja cido primida guarda -1				│
+; │				caso nenhuma tenha cido primida guarda -1				│
+; │																		│
+; │	INPUT:		periférico PIN											│
 ; │	OUTPUT:		Tecla para memoria 'key_press'							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 
@@ -297,8 +299,8 @@ teclado:
 ; │	ROTINA:		display									   0┌───────▷ X	│
 ; │	DESCRICAO:	Altera o estado de 1 pixel					│			│
 ; │				endereços 8000H - 807FH						│			│
-; │	INPUT:		coordenadas XR0, YR1, estado do pixelR2		│			│
-; │	OUTPUT:		Pixel no pixelscreen						▽ Y			│
+; │	INPUT:		Coordenadas X-R0, Y-R1, estado do pixel-R2	│			│
+; │	OUTPUT:		Periférico pixelscreen						▽ Y			│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
@@ -362,8 +364,8 @@ display:
 ; │	DESCRICAO:	Recebe o endereço de uma tabela e desenha o "boneco"	│
 ; │				Correspondente											│
 ; │																		│
-; │	INPUT:		R0 endereço STRING; R1 escreve/apaga					│
-; │	OUTPUT:		Desenho no pixelscreen									│
+; │	INPUT:		R0 endereço STRING; R1 1-escreve/0-apaga				│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 imagem:
   init_imagem:
@@ -380,7 +382,7 @@ imagem:
 	PUSH	R10
 
 	MOV		R10,	R0		;endereço tabela
-	MOV		R7,		R1		;contem 1 escrever; 0 apagar
+	MOV		R7,		R1		;escreve/apaga imagem
 	MOV		R0,		0		;vai conter coordenada x
 	MOV		R1,		0		;vai conter coordenada y
 	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
@@ -440,11 +442,13 @@ main_imagem:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		processa_teclado										│
-; │	DESCRICAO:	analisa o que fazer com base no input do teclado		│
+; │	DESCRICAO:	Analisa o que fazer com base no input do teclado		│
 ; │				temos de verificar se a ultima tecla primida foi		│
 ; │				igual ou não											│
-; │	INPUT:		N/A														│
+; │																		│
+; │	INPUT:		Memória 'key_press'										│
 ; │	OUTPUT:		R0, estado do jogo										│
+; │	DESTROI:	R0														│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
 ; │	4 ←		5		6 →		7	│
@@ -452,7 +456,6 @@ main_imagem:
 ; │	C		D		E		F ⬣	│
 ; ╰─────────────────────────────╯
 processa_teclado:
-  init_p_teclado:
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
@@ -471,7 +474,6 @@ processa_teclado:
 	CMP		R2,		-1			;nenhuma tecla primida
 	JZ		fim_p_teclado
 
-
 	MOV		R4,		11			;B
 	CMP		R2,		R4
 	JZ		init_p				;inicializacao
@@ -483,7 +485,7 @@ processa_teclado:
 	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
 	JZ		fim_p_teclado
 
-	CALL	movimento
+	CALL	movimento			;movimenta submarino
 	JMP		fim_p_teclado
 
   stop_p:
@@ -491,9 +493,6 @@ processa_teclado:
 	JMP		fim_p_teclado
   init_p:
 	MOV		R0,		1
-
-
-
 
   fim_p_teclado:
 	POP		R10
@@ -512,11 +511,10 @@ processa_teclado:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		movimento												│
-; │	DESCRICAO:	chamada quando a tecla F é premida						│
-; │				Correspondente											│
+; │	DESCRICAO:	Movimenta o submarino									│
 ; │																		│
 ; │	INPUT:		tecla premida em R2										│
-; │	OUTPUT:		N/A														│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 movimento:
 	PUSH	R0
@@ -566,8 +564,6 @@ movimento:
 	MOV		R1,		1			;escrever
 	CALL	imagem			;escreve o submarino
 
-
-
   fim_movimento:
 	POP		R10
 	POP		R9
@@ -589,7 +585,7 @@ movimento:
 ; │				dado que imprime byte a byte							│
 ; │																		│
 ; │	INPUT:		R0 endereço STRING										│
-; │	OUTPUT:		Desenho no pixelscreen									│
+; │	OUTPUT:		Periférico pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 ecra:
 	PUSH	R0
@@ -662,8 +658,6 @@ fim_relogios:
 	POP		R0
 	RET
 
-
-
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		reset_all												│
 ; │	DESCRICAO:	No inicio do jogo faz reset a tudo						│
@@ -672,7 +666,6 @@ fim_relogios:
 ; │	OUTPUT:		Registos, Displays										│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 reset_all:
-
 	MOV		R1,		0
 	MOV		R0,		inicio		;tudo a 0
 	CALL	ecra				;Apaga todo o conteudo do ecra
@@ -719,7 +712,7 @@ reset_all:
 ; │	ROTINA:		verifica_movimentos										│
 ; │	DESCRICAO:	verifica se o submarino pode mexer ou sai do ecrã		│
 ; │																		│
-; │	INPUT:		tecla premida em R2; movimentos em R3					│
+; │	INPUT:		tecla premida em R2; movimentos em R3 (XXYY)			│
 ; │	OUTPUT:		R1 0 = não mexe											│
 ; │	DESTROI:	R1, R4, R5, R7											│
 ; ╰─────────────────────────────────────────────────────────────────────╯
@@ -741,7 +734,7 @@ verifica_movimentos:
 	MOVB	R9,		[R0]		;Δy
 	SUB		R9,		1			;coordenadas começam no 0
 	MOV		R0,		submarino
-	;		R3					;0X0Y
+
 	veri_x:			;0<=x<=31
 		MOVB	R5,		[R0]		;contem coordenada x
 		MOV		R4,		R3			;deslocamento XXYY
@@ -780,23 +773,6 @@ verifica_movimentos:
 	POP		R3
 	POP		R0
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
