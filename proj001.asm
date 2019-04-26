@@ -26,7 +26,7 @@ DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
 PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
-NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
+NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		;posição inicial submarino
 submarinoYI		EQU	20
 
@@ -34,9 +34,10 @@ submarinoYI		EQU	20
 PLACE		1000H
 
 key_press:	WORD	0				;tecla primida
-			WORD	0				;se no instante anterior uma tecla tinha cido primida
+			WORD	0				;se no instante anterior uma tecla tinha cido primida (0[escrever]/1[não escrever])
 
-table_char:	STRING	-1,	-1			;0	↖︎
+table_char:						;movimentos do submarino
+			STRING	-1,	-1			;0	↖︎
 			STRING	0,	-1			;1	↑
 			STRING	1,	-1			;2	↗︎
 			STRING	0,	NMEXESUB	;3
@@ -52,7 +53,6 @@ table_char:	STRING	-1,	-1			;0	↖︎
 			STRING	0,	NMEXESUB	;D
 			STRING	0,	NMEXESUB	;E
 			STRING	0,	NMEXESUB	;F	⬣
-
 
 submarino:	STRING	9,20,6,3		;x, y, largura do submarino (Δx), comprimento (Δy)
 			STRING	0,0,1,1,0,0
@@ -82,10 +82,16 @@ torpedo:	STRING	10,16,1,3		;x, y, Δx, Δy
 bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 			STRING	1
 
+; Tabela de vectores de interrupção																						[n percebo isto]
+tab:		WORD	rot0
 
 SP_final:	TABLE	100H
 SP_inicial:
 
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │ ecrãns																│
+; ╰─────────────────────────────────────────────────────────────────────╯
 inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -120,8 +126,6 @@ inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
-
-
 fim_jogo:							;ecrã fim do jog
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -155,9 +159,6 @@ fim_jogo:							;ecrã fim do jog
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
-
-; Tabela de vectores de interrupção																						[n percebo isto]
-tab:		WORD	rot0
 
 PLACE		0
 inicializacao:
@@ -268,7 +269,7 @@ teclado:
 
 	tecla_anulada:			;ignora a tecla primida pois ainda é a anterior
 	MOV		R7,		-1		;mete -1 na memoria para não acontecer nada mas 
-	MOV		[R6],	R7		;deixa a tecla anterior a 1 para n escrever até ser largada
+	MOV		[R6],	R7		;deixa a tecla anterior a 1 para não escrever até ser largada
 	JMP		fim_teclado
 
 	tecla_nula:
@@ -415,7 +416,7 @@ main_imagem:
 			ADD		R0,		1				; soma 1 ao x
 			CMP		R9,		R0				; vê se já passou do limite de colunas
 			JZ		imagem_linhas			; se passou avança linha seguinte
-			JMP		imagem_colunas			; se n repete
+			JMP		imagem_colunas			; se não repete
 
   chamada_display:
   		MOV		R2,		R7					; escreve 0 ou 1 com base se queremos apagar ou escrever a imagem
@@ -539,7 +540,7 @@ movimento:
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
 
-	CALL	verifica_movimentos	;verifica se o submarino vai sair do ecrã se o ovimento acontecer
+	CALL	verifica_movimentos	;verifica se o submarino vai sair do ecrã se o movimento acontecer
 	AND		R1,		R1
 	JZ		fim_movimento
 
@@ -548,22 +549,22 @@ movimento:
 	CALL	imagem				;apaga o submarino
 	MOV		R1,		1			;escrever
 	MOV		R4,		table_char
-	ADD		R4,		R2
+	ADD		R4,		R2			;linha que contem o movimento
 	;move o submarino
-	MOVB	R3,		[R4]
-	MOVB	R5,		[R0]
+	MOVB	R3,		[R4]		;deslocação em x
+	MOVB	R5,		[R0]		;x atual
 	ADD		R5,		R3		;posição x + R3
-	MOVB	[R0],	R5
-	ADD		R0,		1
-	ADD		R4,		1
-	MOVB	R3,		[R4]
-	MOVB	R5,		[R0]
+	MOVB	[R0],	R5		;escreve nova posição
+	ADD		R0,		1			;memoria posição y
+	ADD		R4,		1			;memoria deslocação em y
+	MOVB	R3,		[R4]		;deslocação em y
+	MOVB	R5,		[R0]		;posição y atual
 	ADD		R5,		R3		;posição y + R3
-	MOVB	[R0],	R5
+	MOVB	[R0],	R5		;escreve nova posição
 
 	MOV		R0,		submarino	;imagem a escrever
 	MOV		R1,		1			;escrever
-	CALL	imagem		;escreve o submarino
+	CALL	imagem			;escreve o submarino
 
 
 
@@ -718,11 +719,65 @@ reset_all:
 ; │	ROTINA:		verifica_movimentos										│
 ; │	DESCRICAO:	verifica se o submarino pode mexer ou sai do ecrã		│
 ; │																		│
-; │	INPUT:		tecla premida em R2										│
+; │	INPUT:		tecla premida em R2; movimentos em R3					│
 ; │	OUTPUT:		R1 0 = não mexe											│
+; │	DESTROI:	R1, R4, R5, R7											│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 verifica_movimentos:
 	PUSH	R0
+	PUSH	R3
+	PUSH	R2
+	PUSH	R9
+	PUSH	R8
+	PUSH	R10
+  init_veri_movi:
+	MOV		R0,		submarino	;memoria do submarino
+	MOV		R10,	32			;tamanho ecra
+	MOV		R7,		00FFH		;
+	ADD		R0,		2			;Δx
+	MOVB	R8,		[R0]		;Δx
+	SUB		R8,		1			;coordenadas começam no 0
+	ADD		R0,		1			;Δy
+	MOVB	R9,		[R0]		;Δy
+	SUB		R9,		1			;coordenadas começam no 0
+	MOV		R0,		submarino
+	;		R3					;0X0Y
+	veri_x:			;0<=x<=31
+		MOVB	R5,		[R0]		;contem coordenada x
+		MOV		R4,		R3			;deslocamento XXYY
+		SHR		R4,		8			;deslocamento 00XX
+		ADD		R5,		R4
+		CMP		R5,		R7			;vê se a coordenada é -1 [sair esquerda ecrã]
+		JZ		fim_veri_nao_move
+		ADD		R5,		R8
+		CMP		R5,		R10			;vê se a coordenada é 32 [sair direita ecrã]	
+		JZ		fim_veri_nao_move
+
+	veri_y:			;0<=y<=31
+		ADD		R0,		1			;
+		MOVB	R5,		[R0]		;coordenada y
+		MOV		R4,		R3			;deslocamento XXYY
+		AND		R4,		R7			;deslocamento 00YY
+
+		ADD		R5,		R4
+		CMP		R5,		R7			;vê se a coordenada é -1 [sair cima ecrã]
+		JZ		fim_veri_nao_move
+		ADD		R5,		R9
+		CMP		R5,		R10			;vê se a coordenada é 32 [sair baixo ecrã]	
+		JZ		fim_veri_nao_move
+	
+  fim_veri_move:
+	MOV		R1,		1
+	JMP		fim_veri_movi
+  fim_veri_nao_move:
+	MOV		R1,		0
+
+  fim_veri_movi:
+  	POP		R10
+  	POP		R8
+  	POP		R9
+	POP		R2
+	POP		R3
 	POP		R0
 	RET
 
