@@ -19,7 +19,7 @@ DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
 PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
-NMEXESUB		EQU 2		; valor no qual o teclado n move o sub.
+NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		;posição inicial submarino
 submarinoYI		EQU	20
 
@@ -221,7 +221,7 @@ teclado:
   linhas:
 	CMP		R1, 	1		; verifica se o bit de menor peso é 1
 	JZ		colunas			; se for vai avaliar a mesma coisa nas linhas
-	ADD		R7, 	1		; se n for adiciona 1 ao contador
+	ADD		R7, 	1		; se não for adiciona 1 ao contador
 	SHR		R1, 	1		; desloca o numero para a direita
 	JMP		linhas			; repete até determinar o nº de linhas
 
@@ -256,7 +256,7 @@ teclado:
 
 	tecla_anulada:			;ignora a tecla primida pois ainda é a anterior
 	MOV		R7,		-1		;mete -1 na memoria para não acontecer nada mas 
-	MOV		[R6],	R7		;deixa a tecla anterior a 1 para n escrever até ser largada
+	MOV		[R6],	R7		;deixa a tecla anterior a 1 para não escrever até ser largada
 	JMP		fim_teclado
 
 	tecla_nula:
@@ -403,7 +403,7 @@ main_imagem:
 			ADD		R0,		1				; soma 1 ao x
 			CMP		R9,		R0				; vê se já passou do limite de colunas
 			JZ		imagem_linhas			; se passou avança linha seguinte
-			JMP		imagem_colunas			; se n repete
+			JMP		imagem_colunas			; se não repete
 
   chamada_display:
   		MOV		R2,		R7					; escreve 0 ou 1 com base se queremos apagar ou escrever a imagem
@@ -608,7 +608,7 @@ reset_all:
 	CALL	ecra				;Apaga todo o conteudo do ecra
 
 	MOV		R0,		DISPLAY1
-	MOVB	[R0],	R1			;ecreve 0
+	MOVB	[R0],	R1			;escreve 0
 	MOV		R0,		DISPLAY2
 	MOVB	[R0],	R1			;escreve 0
 
