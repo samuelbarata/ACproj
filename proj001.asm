@@ -441,7 +441,7 @@ main_imagem:
 ; │	DESCRICAO:	analisa o que fazer com base no input do teclado		│
 ; │				temos de verificar se a ultima tecla primida foi		│
 ; │				igual ou não											│
-; │	INPUT:		0														│
+; │	INPUT:		N/A														│
 ; │	OUTPUT:		R0, estado do jogo										│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
@@ -536,6 +536,10 @@ movimento:
 	ADD		R3,		R2		;posição de memoria do movimento
 	MOV		R3,		[R3]	;buscar movimentação sub
 	CMP		R3, 	NMEXESUB
+	JZ		fim_movimento
+
+	CALL	verifica_movimentos
+	AND		R1,		R1
 	JZ		fim_movimento
 
 	MOV		R0,		submarino	;memoria do submarino
@@ -707,6 +711,37 @@ reset_all:
 	MOV		R10,	0
 
 	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		verifica_movimentos										│
+; │	DESCRICAO:	verifica se o submarino pode mexer ou sai do ecrã		│
+; │																		│
+; │	INPUT:		tecla premida em R2										│
+; │	OUTPUT:		R1 0 = não mexe											│
+; ╰─────────────────────────────────────────────────────────────────────╯
+verifica_movimentos:
+	PUSH	R0
+	POP		R0
+	RET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
