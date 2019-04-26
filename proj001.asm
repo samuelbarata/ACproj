@@ -82,7 +82,7 @@ bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 SP_final:	TABLE	100H
 SP_inicial:
 
-inicio:
+inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -118,7 +118,7 @@ inicio:
 
 
 
-fim_jogo:
+fim_jogo:							;ecrã fim do jog
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
@@ -181,7 +181,7 @@ fim_main:
 fim:
 	CALL	teclado
 	CALL	processa_teclado
-	CMP		R0,		1			;0 == ⬣; 1 == inicializacao; outro == decorrer jogo
+	CMP		R0,		1			;0 == ⬣; 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
 
@@ -217,8 +217,8 @@ teclado:
  	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi primida e guarda -1 na memória
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
-	MOV		R4,		00001111b	;mascara bits teclado
-	AND		R3,		R4		;isola os bits do teclado
+	MOV		R4,		00001111b	; mascara bits teclado
+	AND		R3,		R4		; isola os bits do teclado dos do relógio
 	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
 	JZ 		ciclo_tec		; nenhuma tecla premida
 	MOV		R4, 	R3		; guardar tecla premida em registo
@@ -229,7 +229,7 @@ teclado:
   linhas:
 	CMP		R1, 	1		; verifica se o bit de menor peso é 1
 	JZ		colunas			; se for vai avaliar a mesma coisa nas linhas
-	ADD		R7, 	1		; se n for adiciona 1 ao contador
+	ADD		R7, 	1		; se não for adiciona 1 ao contador
 	SHR		R1, 	1		; desloca o numero para a direita
 	JMP		linhas			; repete até determinar o nº de linhas
 
@@ -255,7 +255,7 @@ teclado:
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
 	JNZ		tecla_anulada
 
-	tecla_valida:
+	tecla_valida:		;guarda a tecla em memoria se a mesma for válida
 	MOV		[R6],	R7
 	ADD		R6,		2
 	MOV		R7,		1		;escreve 1 para por na memoria
@@ -297,25 +297,22 @@ teclado:
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
-  	PUSH	R0
-	PUSH	R1
-	PUSH	R2
+	PUSH	R0			;contem x
+	PUSH	R1			;contem y
+	PUSH	R2			;contem o estado
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
 	PUSH	R7
 	PUSH	R10
   processa:					;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
-  	;R0,	x
-  	;R1,	y
-  	;R2,	estado
 	MOV		R4,		PSCREEN		;endereço base do display
 	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
 	MOV		R7,		8			;Registo para calculos auxiliares
 	MOD		R6,		R7			;contem posição do bit [0 - 7]
 
-	ciclo_disp:					;desloca a mascara R5 até ao bit
+	ciclo_disp:				;desloca a mascara R5 até ao bit
 		AND	R6,		R6
 		JZ	next_disp1
 		SHR	R5,		1
@@ -476,7 +473,7 @@ processa_teclado:
 
 	MOV		R4,		15			;F
 	CMP		R2,		R4
-	JZ		stop_p				;fim jogo
+	JZ		stop_p				;fim do jogo
 
 	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
 	JZ		fim_p_teclado
@@ -538,26 +535,26 @@ movimento:
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
 
-	CALL	verifica_movimentos
+	CALL	verifica_movimentos	;verifica se o submarino vai sair do ecrã se o ovimento acontecer
 	AND		R1,		R1
 	JZ		fim_movimento
 
 	MOV		R0,		submarino	;memoria do submarino
-	MOV		R1,		0	;apagar
-	CALL	imagem		;apaga o submarino
-	MOV		R1,		1	;escrever
+	MOV		R1,		0			;apagar
+	CALL	imagem				;apaga o submarino
+	MOV		R1,		1			;escrever
 	MOV		R4,		table_char
 	ADD		R4,		R2
 	;move o submarino
 	MOVB	R3,		[R4]
 	MOVB	R5,		[R0]
-	ADD		R5,		R3		;posição x + 
+	ADD		R5,		R3		;posição x + R3
 	MOVB	[R0],	R5
 	ADD		R0,		1
 	ADD		R4,		1
 	MOVB	R3,		[R4]
 	MOVB	R5,		[R0]
-	ADD		R5,		R3		;posição y +
+	ADD		R5,		R3		;posição y + R3
 	MOVB	[R0],	R5
 
 	MOV		R0,		submarino	;imagem a escrever
