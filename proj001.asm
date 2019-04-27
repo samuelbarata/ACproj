@@ -52,12 +52,6 @@ display_valor_1:
 display_valor_2:
 			WORD	0
 
-evento_int:
-			WORD 0				; se 1, indica que a interrupção 0 ocorreu
-			WORD 0				; se 1, indica que a interrupção 1 ocorreu
-			;WORD 0				; se 1, indica que a interrupção 2 ocorreu
-			;WORD 0				; se 1, indica que a interrupção 3 ocorreu
-
 table_char:						;movimentos do submarino
 			STRING	-1,	-1			;0	↖︎
 			STRING	0,	-1			;1	↑
@@ -231,7 +225,6 @@ main:
 	CMP		R0,	1
 	JZ 		inicializacao
 
-	CALL	processa
 
 	JMP		main				;repete o ciclo principal
 fim_main:
@@ -404,8 +397,8 @@ display:
 	ADD		R4,		R1			;screen + (x/4) + 4*y
 
 	MOVB	R10,	[R4]		;vai buscar o byte atual para R10
-  	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
-  	JZ		apaga
+	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
+	JZ		apaga
   
   escreve:
   	OR		R10,	R5			;modifica o bit para 1
@@ -479,6 +472,8 @@ main_imagem:
 		JZ		fim_imagem					
 		MOV		R0,		R3					
 		imagem_colunas:						; percorre as colunas
+			AND		R7,		R7
+			JZ		chamada_display			; se estiver a apagar poupa um acesso a memoria e apaga todo o retângulo
 			MOVB	R2,		[R10]			; vai buscar o bit seguinte à memoria
 			AND		R2,		R2				; verifica se o bit está ativo ou não
 			JNZ		chamada_display			; Se o bit estiver ativo vai chamar a funcao display
@@ -507,7 +502,6 @@ main_imagem:
 	POP		R1
 	POP		R0
 	RET
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		processa_teclado										│
@@ -835,30 +829,6 @@ verifica_movimentos:
 
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		processa												│
-; │	DESCRICAO:	movimentos barcos + torpedos							│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		pixelscreen + memoria									│
-; │	DESTROI:	N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-processa:
-	PUSH	R2
-	PUSH	R3
-
-	;MOV		R3,		evento_int
-	;MOV		R2,		1
-	;MOV		[R3],	R2
-	;MOV		[R3+2],	R2
-
-	CALL	torpedo_r
-	CALL	barcos
-	POP		R3
-	POP		R2
-	RET
-
-
-; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		torpedo_r												│
 ; │	DESCRICAO:	movimenta o torpedo										│
 ; │																		│
@@ -879,13 +849,6 @@ torpedo_r:
 	PUSH	R9
 	PUSH	R10
 
-	MOV		R2,		evento_int
-	ADD		R2,		2			;endereço interrupção 1
-	MOV		R3,		[R2]
-	AND		R3,		R3
-	JZ		fim_torpedo
-	MOV		R1,		0		;apagar imagem + interrupção
-	MOV		[R2],	R1
 
 	CALL	verifica_pontos
 
@@ -924,14 +887,8 @@ verifica_pontos:
 ; │	OUTPUT:		pixelscreen, memoria barcos								│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 barcos:
-	CALL	hexa_escreve_p2		;DEBUG																					DEBUG
-	PUSH	R2
 	PUSH	R3
-	PUSH	R4
-	MOV		R2,		evento_int
-	MOV		R4,		[R2]
-	AND		R4,		R4
-	JZ		fim_barcos
+
 	MOV		R3,		barco1
 	CALL	barcos_ciclo
 	MOV		R3,		barco2
@@ -970,7 +927,8 @@ barcos:
 		ADD		R3,		R5
 		MOV		R9,		R3		;XXYY t++
 		SHR		R9,		8		;00XX barco t++
-		MOV		R10,	[R0+2]	;Δx
+		MOV		R10,	[R0+2]	;ΔxΔy
+		SHR		R10,	8		;00Δx
 		ADD		R9,		R10
 		PUSH	R4
 		MOV		R4,		R9
@@ -979,7 +937,7 @@ barcos:
 		POP		R4
 		MOV		R6,		bar_max_x
 		CMP		R9,		R6		;fica parado ou movimenta
-		JP		fim_barcos
+		JP		barco_continua
 		MOV		[R0],	R3		;escreve o movimento
 		JMP		barco_continua
 
@@ -995,14 +953,14 @@ barcos:
 		POP		R4
 		MOV		R6,		bar_min_x
 		CMP		R9,		R6		;fica parado ou movimenta
-		JN		fim_barcos
+		JN		barco_continua
 		MOV		[R0],	R3		;escreve o movimento
 		JMP		barco_continua
 
 	  barco_continua:
 		MOV		R1,		1
 		CALL	imagem
-		
+	  fim_c_barcos:
 		POP		R10
 		POP		R9
 		POP		R6
@@ -1014,9 +972,7 @@ barcos:
   		RET
 
   fim_barcos:
-	POP		R4
 	POP		R3
-	POP		R2
 	RET
 
 
@@ -1151,25 +1107,11 @@ hmovbs:
 ; │		   3 210														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 rot0:
-	PUSH	R10
-	PUSH	R9
-	MOV		R10,	evento_int
-	MOV		R9,		1
-	MOV		[R10],	R9
-
-	POP		R9
-	POP		R10
+	CALL	barcos
 	RFE
 
 rot1:
-	PUSH	R10
-	PUSH	R9
-	MOV		R10,	evento_int
-	MOV		R9,		1			; assinala que houve uma interrupção
-	MOV		[R10+2],R9			; na componente 1 da variável evento_int
-
-	POP		R9
-	POP		R10
+	CALL	torpedo_r
 	RFE
 
 
