@@ -35,7 +35,8 @@ sub_max_x		EQU	31		; barreiras invisíveis do submarino
 sub_min_x		EQU	0
 sub_max_y		EQU	31
 sub_min_y		EQU	15
-
+bar_max_x		EQU	31		; barreiras invisíveis dos barcos
+bar_min_x		EQU	0
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Memória																│
@@ -105,6 +106,7 @@ bala:		STRING	1,21,1,1		;x, y, Δx, Δy
 
 ; Tabela de vectores de interrupção																						[n percebo isto]
 tab:		WORD	rot0
+			WORD	rot1
 
 SP_final:	TABLE	100H
 SP_inicial:
@@ -745,10 +747,9 @@ reset_all:
 	MOV		R9,		0
 	MOV		R10,	0
 
-;	EI0
-;	EI1
-;	EI
-
+	EI0
+	EI1
+	EI
 	RET
 
 
@@ -842,10 +843,10 @@ processa:
 	PUSH	R2
 	PUSH	R3
 
-	MOV		R3,		evento_int
-	MOV		R2,		1
-	MOV		[R3],	R2
-	MOV		[R3+2],	R2
+	;MOV		R3,		evento_int
+	;MOV		R2,		1
+	;MOV		[R3],	R2
+	;MOV		[R3+2],	R2
 
 	CALL	torpedo_r
 	CALL	barcos
@@ -957,13 +958,23 @@ barcos:
   direita:				;1 move direira
 	MOV		R3,		[R0]	;posição x do barco
 	ADD		R3,		R5
-	MOV		[R0],	R3
+	MOV		R9,		R3		;XXYY t++
+	SHR		R9,		2		;00XX barco t++
+	MOV		R6,		bar_max_x
+	CMP		R9,		R6		;fica parado ou movimenta
+	JP		barco_continua
+	MOV		[R0],	R3		;escreve o movimento
 	JMP		barco_continua
 
   esquerda:				;
 	MOV		R3,		[R0]	;posição x do barco
 	SUB		R3,		R5
-	MOV		[R0],	R3
+	MOV		R9,		R3		;XXYY barco t++
+	SHR		R9,		2		;00XX barco t++
+	MOV		R6,		bar_min_x
+	CMP		R9,		R6		;fica parado ou movimenta
+	JN		barco_continua
+	MOV		[R0],	R3		;escreve o movimento
 	JMP		barco_continua
 
   barco_continua:
