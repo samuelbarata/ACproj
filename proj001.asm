@@ -12,8 +12,6 @@
 ;│	C		D		E		F ⬣	│
 ;╰──────────────────────────────╯
 
-;																														│Comentários debug para a direita do caracter 120
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Constantes															│
@@ -177,7 +175,7 @@ fim_jogo:							;ecrã fim do jogo
 		STRING 018H, 003H, 0F8H, 000H
 		STRING 000H, 000H, 0E0H, 000H
 		STRING 000H, 000H, 000H, 000H
-tou_com_sono_e_sem_nada_pra_fazer:
+dino:
 		STRING 000H, 000H, 000H, 000H
 		STRING 000H, 000H, 03FH, 0F8H
 		STRING 000H, 000H, 07FH, 0FCH
@@ -232,9 +230,20 @@ main:
 	JMP		main				;repete o ciclo principal
 fim_main:
 	PUSH	R0					;guarda o estado do jogo na pilha
-	MOV		R0,		tou_com_sono_e_sem_nada_pra_fazer
-	;MOV		R0,		fim_jogo
+	PUSH	R1
+
+	MOV		R1,		display_valor_1
+	CMP		R1,		00FFH		;verifica se o jogador chegou aos 99
+	JZ		ganha
+  perde:						;perde o jogo
+	MOV		R0,		dino
+	JMP		fm_cont
+  ganha:						;ganha o jogo
+  	MOV		R0,		fim_jogo
+  fm_cont:
 	CALL	ecra				;imprime ecra fim de jogo
+	
+	POP		R1
 	POP		R0					;retorna o estado do jogo
 fim:
 	CALL	teclado				
