@@ -27,13 +27,13 @@ PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
 LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
-submarinoXI		EQU	9		;posição inicial submarino
+submarinoXI		EQU	9		; submarino posição inicial
 submarinoYI		EQU	20
-barco1XI		EQU	1
-barco1YI		EQU	2
-barco2XI		EQU	20
+barco1XI		EQU	1		; barco1 posição inicial
+barco1YI		EQU	2		
+barco2XI		EQU	20		; barco2 posição inicial
 barco2YI		EQU	9
-sub_max_x		EQU	31
+sub_max_x		EQU	31		; barreiras invisíveis do submarino
 sub_min_x		EQU	0
 sub_max_y		EQU	31
 sub_min_y		EQU	15
@@ -177,6 +177,39 @@ fim_jogo:							;ecrã fim do jogo
 		STRING 018H, 003H, 0F8H, 000H
 		STRING 000H, 000H, 0E0H, 000H
 		STRING 000H, 000H, 000H, 000H
+tou_com_sono_e_sem_nada_pra_fazer:
+		STRING 000H, 000H, 000H, 000H
+		STRING 000H, 000H, 03FH, 0F8H
+		STRING 000H, 000H, 07FH, 0FCH
+		STRING 000H, 000H, 067H, 0FCH
+		STRING 000H, 000H, 067H, 0FCH
+		STRING 000H, 000H, 07FH, 0FCH
+		STRING 000H, 000H, 07FH, 0FCH
+		STRING 000H, 000H, 07FH, 0FCH
+		STRING 000H, 000H, 07EH, 000H
+		STRING 000H, 000H, 07EH, 000H
+		STRING 000H, 000H, 07FH, 0F0H
+		STRING 000H, 000H, 07CH, 000H
+		STRING 010H, 001H, 0FCH, 000H
+		STRING 010H, 007H, 0FCH, 000H
+		STRING 010H, 01FH, 0FFH, 080H
+		STRING 018H, 01FH, 0FCH, 080H
+		STRING 01CH, 03FH, 0FCH, 000H
+		STRING 01FH, 0FFH, 0FCH, 000H
+		STRING 01FH, 0FFH, 0FCH, 000H
+		STRING 01FH, 0FFH, 0FCH, 000H
+		STRING 00FH, 0FFH, 0F8H, 000H
+		STRING 007H, 0FFH, 0F8H, 000H
+		STRING 001H, 0FFH, 0E0H, 000H
+		STRING 001H, 0FFH, 0E0H, 000H
+		STRING 000H, 0FFH, 0C0H, 000H
+		STRING 000H, 039H, 0C0H, 000H
+		STRING 000H, 039H, 0C0H, 000H
+		STRING 000H, 020H, 040H, 000H
+		STRING 000H, 020H, 040H, 000H
+		STRING 000H, 020H, 040H, 000H
+		STRING 000H, 030H, 060H, 000H
+		STRING 000H, 000H, 000H, 000H
 
 PLACE		0
 inicializacao:
@@ -199,7 +232,8 @@ main:
 	JMP		main				;repete o ciclo principal
 fim_main:
 	PUSH	R0					;guarda o estado do jogo na pilha
-	MOV		R0,		fim_jogo
+	MOV		R0,		tou_com_sono_e_sem_nada_pra_fazer
+	;MOV		R0,		fim_jogo
 	CALL	ecra				;imprime ecra fim de jogo
 	POP		R0					;retorna o estado do jogo
 fim:
