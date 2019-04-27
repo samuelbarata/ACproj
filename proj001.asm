@@ -698,6 +698,10 @@ reset_all:
 	MOVB	[R0],	R1			;escreve 0
 	MOV		R0,		DISPLAY2
 	MOVB	[R0],	R1			;escreve 0
+	MOV		R0,		display_valor_1
+	MOV		[R0],	R1
+	MOV		R0,		display_valor_2
+	MOV		[R0],	R1
 
   sub_init:
 	MOV		R0,		submarino
@@ -921,10 +925,10 @@ verifica_pontos:
 ; │	OUTPUT:		pixelscreen, memoria barcos								│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 barcos:
+	CALL	hexa_escreve_p2		;DEBUG																					DEBUG
 	PUSH	R2
 	PUSH	R3
 	PUSH	R4
-
 	MOV		R2,		evento_int
 	MOV		R4,		[R2]
 	AND		R4,		R4
@@ -967,6 +971,8 @@ barcos:
 		ADD		R3,		R5
 		MOV		R9,		R3		;XXYY t++
 		SHR		R9,		8		;00XX barco t++
+		MOV		R10,	[R0+2]	;Δx
+		ADD		R9,		R10
 		PUSH	R4
 		MOV		R4,		R9
 		CALL	hmovbs
@@ -1013,69 +1019,6 @@ barcos:
 	POP		R3
 	POP		R2
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1229,3 +1172,47 @@ rot1:
 	POP		R9
 	POP		R10
 	RFE
+
+
+
+;-------------------------------INUITIL PARA PROJETO----------------------------------------
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		hexa_escreve_p2											│
+; │	DESCRICAO:	incrementa o valor do hexa diplay2 por 1				│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		DISPLAY2												│
+; ╰─────────────────────────────────────────────────────────────────────╯
+hexa_escreve_p2:
+
+	PUSH	R1
+	PUSH	R3		;mascara
+	PUSH	R4
+	PUSH	R5
+
+	MOV		R4,		00001010b
+	MOV		R5,		display_valor_2
+	MOV		R1,		[R5]
+	ADD		R1,		1
+	MOV		R3,		00001111b ;isola as unidades
+	AND		R3,		R1
+	CMP		R3,		R4
+	JZ		salta_pra_10_2
+	JMP		hexa_continuacao_2
+
+  salta_pra_10_2:
+	ADD		R1,		6
+	JMP		hexa_continuacao_2
+
+  hexa_continuacao_2:
+	MOV		[R5],	R1
+	MOV		R5,		DISPLAY2
+	MOVB	[R5],	R1
+
+  hexa_fim_2:
+  	POP		R5
+	POP		R4
+	POP		R3
+	POP		R1
+	RET
+
