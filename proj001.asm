@@ -744,7 +744,7 @@ reset_all:
 
 	EI0
 	EI1
-	EI
+	;EI																													O MEU PC N CORRE COM INTERRUPÇÕES, MT LENTO
 	RET
 
 
