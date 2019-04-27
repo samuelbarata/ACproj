@@ -214,7 +214,6 @@ inicializacao:
 	MOV		SP,		SP_inicial
 	MOV		BTE,	tab			;interrupções																			[n percebo isto]
 	CALL	reset_all			;faz reset a todas as variaveis, ecrãs, registos
-
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
@@ -233,7 +232,8 @@ fim_main:
 	PUSH	R1
 
 	MOV		R1,		display_valor_1
-	CMP		R1,		0099H		;verifica se o jogador chegou aos 99
+	MOV		R0,		0099H
+	CMP		R1,		R0		;verifica se o jogador chegou aos 99
 	JZ		ganha
   perde:						;perde o jogo
 	MOV		R0,		dino
@@ -953,7 +953,14 @@ hmovbs:
 	RET
 
 
-;----------interrupções?-------------------																				Não percebo
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │ Interrupções														│
+; │																		│
+; │	RE:	0000 0000 0000 0000												│
+; │		RNDI IIII TTBA VCNZ												│
+; │		 PEE EEEE DV													│
+; │		   3 210														│
+; ╰─────────────────────────────────────────────────────────────────────╯
 rot0:
 	PUSH	R10
 	PUSH	R9
