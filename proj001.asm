@@ -51,6 +51,12 @@ display_valor_1:
 display_valor_2:
 			WORD	0
 
+evento_int:
+			WORD 0				; se 1, indica que a interrupção 0 ocorreu
+			WORD 0				; se 1, indica que a interrupção 1 ocorreu
+			;WORD 0				; se 1, indica que a interrupção 2 ocorreu
+			;WORD 0				; se 1, indica que a interrupção 3 ocorreu
+
 table_char:						;movimentos do submarino
 			STRING	-1,	-1			;0	↖︎
 			STRING	0,	-1			;1	↑
@@ -223,11 +229,11 @@ main:
 	CMP		R0,	1
 	JZ 		inicializacao
 
-	;CALL	relogios			;verifica ciclos de relogio
-	;CALL	hexa_escreve_p1
+	CALL	processa
 
 	JMP		main				;repete o ciclo principal
 fim_main:
+	DI
 	PUSH	R0					;guarda o estado do jogo na pilha
 	PUSH	R1
 
@@ -374,7 +380,7 @@ display:
 	PUSH	R6
 	PUSH	R7
 	PUSH	R10
-  processa:					;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
+						;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
 	MOV		R4,		PSCREEN		;endereço base do display
 	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
@@ -673,52 +679,6 @@ ecra:
 	POP		R0
 	RET
 
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		relogios												│
-; │	DESCRICAO:															│
-; │	INPUT:		relógio 1/2 [PIN]										│
-; │	OUTPUT:																│
-; ╰─────────────────────────────────────────────────────────────────────╯
-relogios:
-	PUSH	R0
-	PUSH	R1
-	PUSH	R2
-	PUSH	R3
-	PUSH	R4
-	PUSH	R5
-	PUSH	R6
-	PUSH	R7
-	PUSH	R8
-	PUSH	R9
-	PUSH	R10
-
-	MOV		R0,		PIN			;endereço dos relogios
-	MOVB	R0,		[R0]
-	MOV		R1,		00010000b	;relogio 1 mascara
-	MOV		R2,		00100000b	;relogio 2 mascara
-	AND		R1,		R0			;relogio 1
-	AND		R2,		R0			;relogio 2
-clk1:
-	SHR		R1,		4
-	JZ		clk2
-
-
-clk2:
-	SHR		R2,		5
-
-fim_relogios:
-	POP		R10
-	POP		R9
-	POP		R8
-	POP		R7
-	POP		R6
-	POP		R5
-	POP		R4
-	POP		R3
-	POP		R2
-	POP		R1
-	POP		R0
-	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		reset_all												│
@@ -784,6 +744,10 @@ reset_all:
 	MOV		R8,		0
 	MOV		R9,		0
 	MOV		R10,	0
+
+;	EI0
+;	EI1
+;	EI
 
 	RET
 
@@ -864,6 +828,261 @@ verifica_movimentos:
 	POP		R3
 	POP		R0
 	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		processa												│
+; │	DESCRICAO:	movimentos barcos + torpedos							│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		pixelscreen + memoria									│
+; │	DESTROI:	N/A														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+processa:
+	PUSH	R2
+	PUSH	R3
+
+	MOV		R3,		evento_int
+	MOV		R2,		1
+	MOV		[R3],	R2
+	MOV		[R3+2],	R2
+
+	CALL	torpedo_r
+	CALL	barcos
+	POP		R3
+	POP		R2
+	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		torpedo_r												│
+; │	DESCRICAO:	movimenta o torpedo										│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		N/A														│
+; │	DESTROI:	N/A														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+torpedo_r:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R2,		evento_int
+	ADD		R2,		2			;endereço interrupção 1
+	MOV		R3,		[R2]
+	AND		R3,		R3
+	JZ		fim_torpedo
+	MOV		R1,		0		;apagar imagem + interrupção
+	MOV		[R2],	R1
+
+	CALL	verifica_pontos
+
+  fim_torpedo:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		torpedo													│
+; │	DESCRICAO:	Verifica se o torpedo atingiu um barco					│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		N/A														│
+; │	DESTROI:	N/A														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+verifica_pontos:
+	;CALL	hexa_escreve_p1
+	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		barcos													│
+; │	DESCRICAO:	faz os movimentos do barco								│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		pixelscreen, memoria barcos								│
+; ╰─────────────────────────────────────────────────────────────────────╯
+barcos:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R2,		evento_int
+	MOV		R4,		[R2]
+	AND		R4,		R4
+	JZ		fim_barcos
+	MOV		R3,		barco1
+	CALL	barcos_ciclo
+	MOV		R3,		barco2
+	CALL	barcos_ciclo
+	JMP		fim_barcos
+
+  barcos_ciclo:	
+	MOV		R1,		0		;apagar imagem + interrupção
+	MOV		R5,		0100H	; XXYY = x+1
+	MOV		[R2],	R1
+
+	MOV		R0,		R3		;barco a movimentar
+	CALL	imagem			;apaga o barco
+
+	CALL	random			;devolve em R10 0/1
+	AND		R10,	R10		
+	JZ		esquerda		;0 move esquerda
+
+  direita:				;1 move direira
+	MOV		R3,		[R0]	;posição x do barco
+	ADD		R3,		R5
+	MOV		[R0],	R3
+	JMP		barco_continua
+
+  esquerda:				;
+	MOV		R3,		[R0]	;posição x do barco
+	SUB		R3,		R5
+	MOV		[R0],	R3
+	JMP		barco_continua
+
+  barco_continua:
+	MOV		R1,		1
+	CALL	imagem
+  RET
+
+  fim_barcos:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		hexa_escreve_p1											│
@@ -952,7 +1171,6 @@ hmovbs:
 	POP		R0
 	RET
 
-
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Interrupções														│
 ; │																		│
@@ -964,10 +1182,21 @@ hmovbs:
 rot0:
 	PUSH	R10
 	PUSH	R9
-	MOV		R10,	DISPLAY2
-	MOVB	R9,		[R10]
-	ADD		R9,		1
-	MOVB	[R10],	R9
+	MOV		R10,	evento_int
+	MOV		R9,		1
+	MOV		[R10],	R9
+
 	POP		R9
 	POP		R10
-	RET
+	RFE
+
+rot1:
+	PUSH	R10
+	PUSH	R9
+	MOV		R10,	evento_int
+	MOV		R9,		1			; assinala que houve uma interrupção
+	MOV		[R10+2],R9			; na componente 1 da variável evento_int
+
+	POP		R9
+	POP		R10
+	RFE
