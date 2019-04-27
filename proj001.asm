@@ -33,10 +33,10 @@ barco1XI		EQU	1
 barco1YI		EQU	2
 barco2XI		EQU	20
 barco2YI		EQU	9
-sub_max_x		EQU	32
-sub_min_x		EQU	1
-sub_max_y		EQU	32
-sub_min_y		EQU	14
+sub_max_x		EQU	31
+sub_min_x		EQU	0
+sub_max_y		EQU	31
+sub_min_y		EQU	15
 
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
@@ -749,7 +749,7 @@ reset_all:
 ; │	ROTINA:		verifica_movimentos										│
 ; │	DESCRICAO:	verifica se o submarino pode mexer ou sai do ecrã		│
 ; │																		│
-; │	INPUT:		tecla premida em R2; movimentos em R3 (XXYY)			│
+; │	INPUT:		movimentos em R3 (XXYY)									│
 ; │	OUTPUT:		R1 0 = não mexe											│
 ; │	DESTROI:	R1, R4, R5, R7											│
 ; ╰─────────────────────────────────────────────────────────────────────╯
@@ -759,11 +759,11 @@ verifica_movimentos:
 	PUSH	R2
 	PUSH	R9
 	PUSH	R8
+	PUSH	R9
 	PUSH	R10
   init_veri_movi:
 	MOV		R0,		submarino	;memoria do submarino
-	MOV		R10,	32			;tamanho ecra
-	MOV		R7,		00FFH		;
+	MOV		R2,		00FFH		;mascara
 	ADD		R0,		2			;Δx
 	MOVB	R8,		[R0]		;Δx
 	SUB		R8,		1			;coordenadas começam no 0
@@ -772,33 +772,39 @@ verifica_movimentos:
 	SUB		R9,		1			;coordenadas começam no 0
 	MOV		R0,		submarino
 
-	veri_x:			;0<=x<=31
+	veri_x:			;sub_min_x<=x<=sub_max_x
 		MOVB	R5,		[R0]		;contem coordenada x
 		MOV		R4,		R3			;deslocamento XXYY
 		SHR		R4,		8			;deslocamento 00XX
 		CALL	hmovbs
-		ADD		R5,		R4
-		CMP		R5,		R7			;vê se a coordenada é -1 [sair esquerda ecrã]
-		JZ		fim_veri_nao_move
-		ADD		R5,		R8
-		CMP		R5,		R10			;vê se a coordenada é 32 [sair direita ecrã]	
-		JZ		fim_veri_nao_move
 
-	veri_y:			;sub_min_y<=y<=31
+		ADD		R5,		R4
+		MOV		R7, 	sub_min_x
+		CMP		R5,		R7			;vê se a coordenada é sub_min_x [sair esquerda ecrã]
+		JN		fim_veri_nao_move
+
+		ADD		R5,		R8
+		MOV		R7, 	sub_max_x
+		CMP		R5,		R7			;vê se a coordenada é sub_max_x [sair direita ecrã]	
+		JP		fim_veri_nao_move
+
+	veri_y:			;sub_min_y<=y<=sub_max_y
 		ADD		R0,		1
 		MOVB	R5,		[R0]		;coordenada y
 		MOV		R4,		R3			;deslocamento XXYY
-		AND		R4,		R7			;deslocamento 00YY
+
+		AND		R4,		R2			;deslocamento 00YY
 		CALL	hmovbs
 		ADD		R5,		R4
 
-		MOV		R6,		sub_min_y
-		CMP		R5,		R6			;vê se a coordenada é sub_min_y [sair cima ecrã]
-		JZ		fim_veri_nao_move
+		MOV		R7,		sub_min_y
+		CMP		R5,		R7			;vê se a coordenada é sub_min_y [sair cima ecrã]
+		JN		fim_veri_nao_move
 
 		ADD		R5,		R9
-		CMP		R5,		R10			;vê se a coordenada é 32 [sair baixo ecrã]	
-		JZ		fim_veri_nao_move
+		MOV		R7, 	sub_max_y
+		CMP		R5,		R7			;vê se a coordenada é sub_max_y [sair baixo ecrã]	
+		JP		fim_veri_nao_move
 	
   fim_veri_move:
 	MOV		R1,		1
@@ -808,6 +814,7 @@ verifica_movimentos:
 
   fim_veri_movi:
   	POP		R10
+  	POP		R9
   	POP		R8
   	POP		R9
 	POP		R2
