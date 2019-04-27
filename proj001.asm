@@ -472,8 +472,6 @@ main_imagem:
 		JZ		fim_imagem					
 		MOV		R0,		R3					
 		imagem_colunas:						; percorre as colunas
-			AND		R7,		R7
-			JZ		chamada_display			; se estiver a apagar poupa um acesso a memoria e apaga todo o retângulo
 			MOVB	R2,		[R10]			; vai buscar o bit seguinte à memoria
 			AND		R2,		R2				; verifica se o bit está ativo ou não
 			JNZ		chamada_display			; Se o bit estiver ativo vai chamar a funcao display
