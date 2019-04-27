@@ -142,7 +142,7 @@ inicio:								;ecrã apagado
 		STRING 00H, 00H, 00H, 00H
 		STRING 00H, 00H, 00H, 00H
 
-fim_jogo:							;ecrã fim do jogo
+fim_jogo:							;ecrã ganhar jogo
 		STRING 000H, 000H, 000H, 000H
 		STRING 077H, 06CH, 048H, 0C4H
 		STRING 042H, 054H, 055H, 00AH
@@ -175,7 +175,7 @@ fim_jogo:							;ecrã fim do jogo
 		STRING 018H, 003H, 0F8H, 000H
 		STRING 000H, 000H, 0E0H, 000H
 		STRING 000H, 000H, 000H, 000H
-dino:
+dino:								;perder jogo
 		STRING 000H, 000H, 000H, 000H
 		STRING 000H, 000H, 03FH, 0F8H
 		STRING 000H, 000H, 07FH, 0FCH
@@ -233,7 +233,7 @@ fim_main:
 	PUSH	R1
 
 	MOV		R1,		display_valor_1
-	CMP		R1,		00FFH		;verifica se o jogador chegou aos 99
+	CMP		R1,		0099H		;verifica se o jogador chegou aos 99
 	JZ		ganha
   perde:						;perde o jogo
 	MOV		R0,		dino
