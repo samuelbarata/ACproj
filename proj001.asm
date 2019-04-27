@@ -36,6 +36,11 @@ PLACE		1000H
 key_press:	WORD	0				;tecla primida
 			WORD	0				;se no instante anterior uma tecla tinha cido primida (0[escrever]/1[não escrever])
 
+display_valor_1:
+			WORD	0
+display_valor_2:
+			WORD	0
+
 table_char:						;movimentos do submarino
 			STRING	-1,	-1			;0	↖︎
 			STRING	0,	-1			;1	↑
@@ -67,7 +72,7 @@ barco1:		STRING	1,2,8,6			;x, y, Δx, Δy
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	20,3,6,5		;x, y, Δx, Δy
+barco2:		STRING	20,9,6,5		;x, y, Δx, Δy
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
@@ -88,6 +93,7 @@ tab:		WORD	rot0
 SP_final:	TABLE	100H
 SP_inicial:
 
+debug:		WORD	0
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ ecrãs																│
@@ -175,8 +181,9 @@ main:
 	CMP		R0,	1
 	JZ 		inicializacao
 
-	CALL	relogios			;verifica ciclos de relogio
-	
+	;CALL	relogios			;verifica ciclos de relogio
+	;CALL	hexa_escreve_p1
+
 	JMP		main				;repete o ciclo principal
 fim_main:
 	PUSH	R0					;guarda o estado do jogo na pilha
@@ -671,7 +678,7 @@ reset_all:
 	CALL	ecra				;Apaga todo o conteudo do ecra
 
 	MOV		R0,		DISPLAY1
-	MOVB	[R0],	R1			;ecreve 0
+	MOVB	[R0],	R1			;escreve 0
 	MOV		R0,		DISPLAY2
 	MOVB	[R0],	R1			;escreve 0
 
@@ -772,6 +779,52 @@ verifica_movimentos:
 	POP		R2
 	POP		R3
 	POP		R0
+	RET
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		hexa_escreve_p1											│
+; │	DESCRICAO:	incrementa o valor do hexa diplay por 1					│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		DISPLAY1												│
+; ╰─────────────────────────────────────────────────────────────────────╯
+hexa_escreve_p1:
+
+	PUSH	R1
+	PUSH	R3		;mascara
+	PUSH	R4
+	PUSH	R5
+
+	MOV		R4,		00001010b
+	MOV		R5,		display_valor_1
+	MOV		R1,		[R5]
+	ADD		R1,		1
+	MOV		R3,		00001111b ;isola as unidades
+	AND		R3,		R1
+	CMP		R3,		R4
+	JZ		salta_pra_10
+	JMP		hexa_continuacao
+
+  salta_pra_10:
+	ADD		R1,		6
+	MOV		R4,		10100000b	;valor maximo
+	CMP		R4,		R1
+	JZ		hexa_fim_jogo
+	JMP		hexa_continuacao
+
+  hexa_fim_jogo:
+	MOV		R0,		0
+	JMP		hexa_fim
+  hexa_continuacao:
+	MOV		[R5],	R1
+	MOV		R5,		DISPLAY1
+	MOVB	[R5],	R1
+
+  hexa_fim:
+  	POP		R5
+	POP		R4
+	POP		R3
+	POP		R1
 	RET
 
 
