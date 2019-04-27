@@ -29,7 +29,19 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		;posição inicial submarino
 submarinoYI		EQU	20
+barco1XI		EQU	1
+barco1YI		EQU	2
+barco2XI		EQU	20
+barco2YI		EQU	9
+sub_max_x		EQU	32
+sub_min_x		EQU	1
+sub_max_y		EQU	32
+sub_min_y		EQU	14
 
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │ Memória																│
+; ╰─────────────────────────────────────────────────────────────────────╯
 
 PLACE		1000H
 
@@ -682,7 +694,7 @@ reset_all:
 	MOV		R0,		DISPLAY2
 	MOVB	[R0],	R1			;escreve 0
 
-
+  sub_init:
 	MOV		R0,		submarino
 	MOV		R1,		submarinoXI	;x inicial
 	MOVB	[R0],	R1
@@ -691,11 +703,29 @@ reset_all:
 	ADD		R0,		1
 	MOVB	[R0],	R1
 
+  b1_init:
+	MOV		R0,		barco1
+	MOV		R1,		barco1XI	;x inicial
+	MOVB	[R0],	R1
+
+	MOV		R1,		barco1YI	;y inicial
+	ADD		R0,		1
+	MOVB	[R0],	R1
+
+  b2_init:
+	MOV		R0,		barco2
+	MOV		R1,		barco2XI	;x inicial
+	MOVB	[R0],	R1
+
+	MOV		R1,		barco2YI	;y inicial
+	ADD		R0,		1
+	MOVB	[R0],	R1
+
 
 	MOV		R0,		submarino	;imagem
 	MOV		R1,		1			;escreve
 	CALL 	imagem				;Imprime o submarino
-	MOV		R0,		barco1
+	MOV		R0,		barco1	
 	CALL	imagem				;Imprime o barco 1
 	MOV		R0,		barco2
 	CALL	imagem				;Imprime o barco 2
@@ -746,6 +776,7 @@ verifica_movimentos:
 		MOVB	R5,		[R0]		;contem coordenada x
 		MOV		R4,		R3			;deslocamento XXYY
 		SHR		R4,		8			;deslocamento 00XX
+		CALL	hmovbs
 		ADD		R5,		R4
 		CMP		R5,		R7			;vê se a coordenada é -1 [sair esquerda ecrã]
 		JZ		fim_veri_nao_move
@@ -753,15 +784,18 @@ verifica_movimentos:
 		CMP		R5,		R10			;vê se a coordenada é 32 [sair direita ecrã]	
 		JZ		fim_veri_nao_move
 
-	veri_y:			;0<=y<=31
-		ADD		R0,		1			;
+	veri_y:			;sub_min_y<=y<=31
+		ADD		R0,		1
 		MOVB	R5,		[R0]		;coordenada y
 		MOV		R4,		R3			;deslocamento XXYY
 		AND		R4,		R7			;deslocamento 00YY
-
+		CALL	hmovbs
 		ADD		R5,		R4
-		CMP		R5,		R7			;vê se a coordenada é -1 [sair cima ecrã]
+
+		MOV		R6,		sub_min_y
+		CMP		R5,		R6			;vê se a coordenada é sub_min_y [sair cima ecrã]
 		JZ		fim_veri_nao_move
+
 		ADD		R5,		R9
 		CMP		R5,		R10			;vê se a coordenada é 32 [sair baixo ecrã]	
 		JZ		fim_veri_nao_move
@@ -786,7 +820,8 @@ verifica_movimentos:
 ; │	DESCRICAO:	incrementa o valor do hexa diplay por 1					│
 ; │																		│
 ; │	INPUT:		N/A														│
-; │	OUTPUT:		DISPLAY1												│
+; │	OUTPUT:		DISPLAY1, R0[fim jogo]									│
+; │	DESTROI:	R0														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 hexa_escreve_p1:
 
@@ -827,7 +862,45 @@ hexa_escreve_p1:
 	POP		R1
 	RET
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		random													│
+; │	DESCRICAO:	devolve um valor random [0/1]							│
+; │																		│
+; │	INPUT:		DISPLAY2												│
+; │	OUTPUT:		R10,	0/1												│
+; │	DESTROI:	R10														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+random:
+	PUSH	R0
+	MOV		R10,	DISPLAY2	
+	MOVB	R10,	[R10]		;contem valor ao calhas
+	MOV		R0,		00000001b	;mascara bit menor peso
+	AND		R10,	R0			;filtra um unico bit
+	POP		R0
+	RET							;devolve	0/1 em R10
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		MOVBS													│
+; │	DESCRICAO:	extensão sinal de um byte								│
+; │																		│
+; │	INPUT:		R4														│
+; │	OUTPUT:		R4														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+hmovbs:
+	PUSH	R0
+
+	MOV		R0,		10000000b
+	AND		R0,		R4
+	JZ		positivo
+	MOV		R0,		0FF00H
+	OR		R4,		R0
+	JMP		movbs_fim
+  positivo:
+	MOV		R0,		00FFH
+  	AND		R4,		R0
+  movbs_fim:
+	POP		R0
+	RET
 
 
 ;----------interrupções?-------------------																				Não percebo
