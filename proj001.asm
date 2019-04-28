@@ -7,11 +7,13 @@
 ;│	Vasyl Lanko				93622		│
 ;├──────────────────────────────┬───────╯
 ;│	0 ↖︎		1 ↑		2 ↗︎		3	│
-;│	4 ←		5		6 →		7	│
+;│	4 ←		5 ✼		6 →		7	│
 ;│	8 ↙︎		9 ↓		A ↘︎		B ↺	│
 ;│	C		D		E		F ⬣	│
 ;╰──────────────────────────────╯
 
+
+;		🚨⚠️O MEU PC NÃO CONSEGUE CORRER OS CLOCK, NÃO TESTEI BUÉS CENAS⚠️🚨
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Constantes															│
@@ -28,9 +30,9 @@ NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		; submarino posição inicial
 submarinoYI		EQU	20
 barco1XI		EQU	1		; barco1 posição inicial
-barco1YI		EQU	2		
+barco1YI		EQU	1		
 barco2XI		EQU	20		; barco2 posição inicial
-barco2YI		EQU	9
+barco2YI		EQU	8
 sub_max_x		EQU	31		; barreiras invisíveis do submarino
 sub_min_x		EQU	0
 sub_max_y		EQU	31
@@ -58,7 +60,7 @@ table_char:						;movimentos do submarino
 			STRING	1,	-1			;2	↗︎
 			STRING	0,	NMEXESUB	;3
 			STRING	-1,	0			;4	←
-			STRING	0,	NMEXESUB	;5
+			STRING	0,	NMEXESUB	;5	✼
 			STRING	1,	0			;6	→
 			STRING	0,	NMEXESUB	;7
 			STRING	-1,	1			;8	↙︎
@@ -70,12 +72,12 @@ table_char:						;movimentos do submarino
 			STRING	0,	NMEXESUB	;E
 			STRING	0,	NMEXESUB	;F	⬣
 
-submarino:	STRING	9,20,6,3		;x, y, largura do submarino (Δx), comprimento (Δy)
+submarino:	STRING	9,20,6,3,1,0		;x, y, largura do submarino (Δx), comprimento (Δy), ativo?, N/A
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
 
-barco1:		STRING	1,2,8,6			;x, y, Δx, Δy
+barco1:		STRING	1,2,8,6,1,0			;x, y, Δx, Δy, ativo?, N/A
 			STRING	0,1,0,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
@@ -83,19 +85,19 @@ barco1:		STRING	1,2,8,6			;x, y, Δx, Δy
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	20,9,6,5		;x, y, Δx, Δy
+barco2:		STRING	20,9,6,5,1,0		;x, y, Δx, Δy, ativo?, N/A
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	1,1,1,1,1,1
 			STRING	0,1,1,1,1,0
 
-torpedo:	STRING	10,16,1,3		;x, y, Δx, Δy
+torpedo:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo], ativo?, N/A
 			STRING	1
 			STRING	1
 			STRING	1
 
-bala:		STRING	1,21,1,1		;x, y, Δx, Δy
+bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo], ativo?, N/A
 			STRING	1
 
 ; Tabela de vectores de interrupção																						[n percebo isto]
@@ -105,7 +107,6 @@ tab:		WORD	rot0
 SP_final:	TABLE	100H
 SP_inicial:
 
-debug:		WORD	0
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ ecrãs																│
@@ -224,7 +225,6 @@ main:
 	JZ		fim_main			;verifica estado jogo
 	CMP		R0,	1
 	JZ 		inicializacao
-
 
 	JMP		main				;repete o ciclo principal
 fim_main:
@@ -464,7 +464,7 @@ main_imagem:
 	ADD		R8,		R4				;y final
 	MOV		R9,		R5
 	ADD		R9,		R3				;x final
-	ADD		R10,	1				;avança para primeira posição
+	ADD		R10,	3				;avança para primeira posição
 	
 	imagem_linhas:
 		ADD		R1,		1					;percorre as linhas até a coordenada final ser igual à ultima escrita
@@ -512,7 +512,7 @@ main_imagem:
 ; │	DESTROI:	R0														│
 ; ├─────────────────────────────┬───────────────────────────────────────╯
 ; │	0 ↖︎		1 ↑		2 ↗︎		3	│
-; │	4 ←		5		6 →		7	│
+; │	4 ←		5 ✼		6 →		7	│
 ; │	8 ↙︎		9 ↓		A ↘︎		B ↺	│
 ; │	C		D		E		F ⬣	│
 ; ╰─────────────────────────────╯
@@ -543,10 +543,14 @@ processa_teclado:
 	CMP		R2,		R4
 	JZ		stop_p				;fim do jogo
 
-	AND		R0,		R0	;se o jogo estiver parado o movimento não ocorre
+	AND		R0,		R0			;se o jogo estiver parado o movimento não ocorre
 	JZ		fim_p_teclado
 
 	CALL	movimento			;movimenta submarino
+	
+	MOV		R10,	torpedo_cria
+	CALL	R10					;se a tecla 5 for primida é criado um torpedo
+	
 	JMP		fim_p_teclado
 
   stop_p:
@@ -720,7 +724,11 @@ reset_all:
 	MOV		R1,		barco2YI	;y inicial
 	ADD		R0,		1
 	MOVB	[R0],	R1
-
+  torpedo_init:
+  	MOV		R0,		torpedo
+  	ADD		R0,		4
+  	MOV		R1,		0
+  	MOVB	[R0],	R1
 
 	MOV		R0,		submarino	;imagem
 	MOV		R1,		1			;escreve
@@ -744,7 +752,7 @@ reset_all:
 
 	EI0
 	EI1
-	;EI																													O MEU PC N CORRE COM INTERRUPÇÕES, MT LENTO
+	EI
 	RET
 
 
@@ -827,35 +835,111 @@ verifica_movimentos:
 
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		torpedo_r												│
-; │	DESCRICAO:	movimenta o torpedo										│
+; │	ROTINA:		torpedo_move											│
+; │	DESCRICAO:	movimenta o torpedo	- [rot1]							│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		torpedo pixelscreen + memoria							│
+; ╰─────────────────────────────────────────────────────────────────────╯
+torpedo_move:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R4
+
+	MOV		R2,		torpedo																								;alterar linha se houver mais torpedos
+
+	MOV		R0,		[R2]	;posição torpedo XXYY
+	MOV		R1,		[R2+4]	;estado [ativo/inativo]
+	SHR		R1,		8		;elimina o byte seguinte
+
+	AND		R1,		R1
+	JZ		fim_m_torpedo
+
+	move_torpedo:
+	SWAP	R0,		R2		;troca posição com memoria do torpedo
+	SUB		R2,		1
+
+	MOV		R4,		R2
+	CALL	hmovbs			;vai manter apenas o byte de menor peso (00YY)
+	AND		R4,		R4
+	JZ		dest_torpedo	;se o torpedo chegar ao fim do ecrã é apagado
+	
+	MOV		R1,		0
+	CALL	imagem
+	MOV		[R0],	R2
+	MOV		R1,		1
+	CALL	imagem
+	CALL	verifica_choque
+	JMP		fim_m_torpedo
+
+	dest_torpedo:
+	MOV		R1,		0	
+	CALL	imagem			;apaga o torpedo
+	ADD		R0,		4
+	MOVB	[R0],	R1		;inativa o torpedo
+
+  fim_m_torpedo:
+	POP		R4
+	POP		R2
+	POP		R1
+	POP		R0
+	RET
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		verifica_choque											│
+; │	DESCRICAO:	verifica se o torpedo atingiu um barco					│
 ; │																		│
 ; │	INPUT:		N/A														│
 ; │	OUTPUT:		N/A														│
-; │	DESTROI:	N/A														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
-torpedo_r:
+verifica_choque:
+	RET
+
+
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		torpedo_cria											│
+; │	DESCRICAO:	cria um torpedo											│
+; │																		│
+; │	INPUT:		R2 - ultima tecla primida								│
+; │	OUTPUT:		memoria + pixelscreen									│
+; ╰─────────────────────────────────────────────────────────────────────╯
+torpedo_cria:
 	PUSH	R0
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
 	PUSH	R4
 	PUSH	R5
-	PUSH	R6
-	PUSH	R7
-	PUSH	R8
-	PUSH	R9
-	PUSH	R10
 
+	MOV		R0,		5
+	CMP		R2,		R0
+	JNZ		fim_c_torpedo	;se n foi primida a tecla 5 n faz nada
 
-	CALL	verifica_pontos
+	MOV		R2,		torpedo																								;alterar linha se houver mais torpedos
 
-  fim_torpedo:
-	POP		R10
-	POP		R9
-	POP		R8
-	POP		R7
-	POP		R6
+	MOV		R0,		[R2]	;posição torpedo XXYY
+	MOV		R1,		[R2+2]	;tamanho torpedo ∆X∆Y
+	MOV		R5,		[R2+4]	;estado [ativo/inativo]
+	SHR		R5,		8		;elimina o byte seguinte
+
+	AND		R5,		R5
+	JNZ		fim_c_torpedo	;se já estiver ativo não faz nada
+
+	MOV		R3,		submarino
+	MOV		R3,		[R3]		;XXYY submarino
+	SUB		R3,		2			
+	MOV		R4,		500H
+	ADD		R3,		R4
+	MOV		[R2],	R3			;posição torpedo
+	MOV		R3,		1
+	ADD		R2,		4			;posição do estado
+	MOVB	[R2],	R3			;ativa o torpedo
+	SUB		R2,		4
+	MOV		R0,		R2
+	CALL	imagem
+
+  fim_c_torpedo:
 	POP		R5
 	POP		R4
 	POP		R3
@@ -865,21 +949,8 @@ torpedo_r:
 	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		torpedo													│
-; │	DESCRICAO:	Verifica se o torpedo atingiu um barco					│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		N/A														│
-; │	DESTROI:	N/A														│
-; ╰─────────────────────────────────────────────────────────────────────╯
-verifica_pontos:
-	;CALL	hexa_escreve_p1
-	RET
-
-
-; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		barcos													│
-; │	DESCRICAO:	faz os movimentos do barco								│
+; │	DESCRICAO:	faz os movimentos do barcos	- [rot0]					│
 ; │																		│
 ; │	INPUT:		N/A														│
 ; │	OUTPUT:		pixelscreen, memoria barcos								│
@@ -972,42 +1043,6 @@ barcos:
   fim_barcos:
 	POP		R3
 	RET
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		hexa_escreve_p1											│
@@ -1109,7 +1144,7 @@ rot0:
 	RFE
 
 rot1:
-	CALL	torpedo_r
+	CALL	torpedo_move
 	RFE
 
 
