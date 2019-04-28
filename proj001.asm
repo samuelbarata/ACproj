@@ -323,16 +323,14 @@ teclado:
 
   ;se tecla anterior == -1:
 	MOV		R8,		R6
-	;ADD		R8,		2
 	MOV		R8,		[R8+2]	;tecla anterior != -1?
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
 	JNZ		tecla_anulada
 
 	tecla_valida:		;guarda a tecla em memoria se a mesma for válida
 	MOV		[R6],	R7
-	ADD		R6,		2
 	MOV		R7,		1		;escreve 1 para por na memoria
-	MOV		[R6],	R7		;tecla foi primida, manter a 1 até largar
+	MOV		[R6+2],	R7		;tecla foi primida, manter a 1 até largar
 	JMP		fim_teclado
 
 	tecla_anulada:			;ignora a tecla primida pois ainda é a anterior
@@ -344,8 +342,7 @@ teclado:
 	MOV		R7,		-1
 	MOV		[R6],	R7
 	MOV		R7,		0		;valor pra escrever na memoria
-	ADD		R6,		2
-	MOV		[R6],	R7		;tecla não foi primida, próxima vez pode escrever
+	MOV		[R6+2],	R7		;tecla não foi primida, próxima vez pode escrever
 	JMP		fim_teclado
 
 
@@ -602,8 +599,7 @@ movimento:
 
   m_ciclo:				;traduz tecla primida em movimento
 	SHL		R2, 	1		;multiplica por 2
-	ADD		R3,		R2		;posição de memoria do movimento
-	MOV		R3,		[R3]	;buscar movimentação sub
+	MOV		R3,		[R3+R2]	;tabema movimentos + linha correta
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
 
