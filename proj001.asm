@@ -1264,7 +1264,6 @@ bala_r:
 		AND		R4,		R6		;00YYsub
 		SHR		R7,		8		;00∆Xsub
 		
-
 		SUB		R5,		1
 
 		;R1		- bala
