@@ -362,19 +362,17 @@ teclado:
 ; │				endereços 8000H - 807FH						│			│
 ; │	INPUT:		Coordenadas X-R0, Y-R1, estado do pixel-R2	│			│
 ; │	OUTPUT:		Periférico pixelscreen						▽ Y			│
+; │	DESTROI:	R2														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
 	PUSH	R0			;contem x
 	PUSH	R1			;contem y
-	PUSH	R2			;contem o estado (0-apaga/1-escreve)
-	PUSH	R4
-	PUSH	R5
+	PUSH	R5			
 	PUSH	R6
 	PUSH	R7
-	PUSH	R10
+
 						;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
-	MOV		R4,		PSCREEN		;endereço base do display
 	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
 	MOV		R7,		8			;Registo para calculos auxiliares
@@ -385,36 +383,35 @@ display:
 		JZ	next_disp1
 		SHR	R5,		1
 		SUB	R6,		1
-		JMP	ciclo_disp		
+		JMP	ciclo_disp	
 	
 	next_disp1:
 	MOV		R7,		8
 	DIV		R0,		R7			;x/8
 	MOV		R7,		4
 	MUL		R1,		R7			;y*4
-	ADD		R4,		R0			;screen + (x/4)
-	ADD		R4,		R1			;screen + (x/4) + 4*y
+	MOV		R7,		PSCREEN		;endereço base do display
+	ADD		R7,		R0			;screen + (x/4)				fimr0
+	ADD		R7,		R1			;screen + (x/4) + 4*y
 
-	MOVB	R10,	[R4]		;vai buscar o byte atual para R10
+	MOVB	R6,		[R7]		;vai buscar o byte atual para R6
 	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
 	JZ		apaga
   
   escreve:
-  	OR		R10,	R5			;modifica o bit para 1
+  	OR		R6,		R5			;modifica o bit para 1
   	JMP		fim_display
   
   apaga:
   	NOT		R5					;inverte a mascara
-  	AND		R10,	R5			;escreve 0 no bit
+  	AND		R6,		R5			;escreve 0 no bit
  
   fim_display:
-  	MOVB	[R4],	R10			;escreve no display
-  	POP		R10
+  	MOVB	[R7],	R6			;escreve no display
+
 	POP		R7
 	POP		R6
 	POP		R5
-	POP		R4
-	POP		R2
 	POP		R1
 	POP		R0
 	RET
@@ -442,19 +439,41 @@ imagem:
 	PUSH	R9
 	PUSH	R10
 
-	MOV		R10,	R0		;endereço tabela
+	MOV		R10,	R0		;endereço objeto
 	MOV		R7,		R1		;escreve/apaga imagem
 	MOV		R0,		0		;vai conter coordenada x
 	MOV		R1,		0		;vai conter coordenada y
 	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
+;---
+;	MOVB	R3,		[R10]	;Xinicial
+;	ADD		R10,		1
+;	MOVB	R4,		[R10]	;Yinicial
+;	ADD		R10,		1
+;	MOVB	R5,		[R10]	;Δx
+;	ADD		R10,		1
+;	MOVB	R6,		[R10]	;Δy
+;---
 
-	MOVB	R3,		[R10]	;Xinicial
-	ADD		R10,		1
-	MOVB	R4,		[R10]	;Yinicial
-	ADD		R10,		1
-	MOVB	R5,		[R10]	;Δx
-	ADD		R10,		1
-	MOVB	R6,		[R10]	;Δy
+	MOV		R8,		000FFH	;mascara
+
+	MOV		R4,		[R10]	;XXYY
+	MOV		R3,		R4		;XXYY
+	SHR		R3,		8		;00XX
+	AND		R4,		R8		;00YY
+	
+	MOV		R6,		[R10+2]	;∆X∆Y
+	MOV		R5,		R6		;∆X∆Y
+	SHR		R5,		8		;00∆X
+	AND		R6,		R8		;00∆Y
+
+
+
+	;R3	-	00XX
+	;R4	-	00YY
+	;R5	-	00∆X
+	;R6	-	00∆Y
+
+
 main_imagem:
 	MOV		R0,		R3				;coordenada x
 	MOV		R1,		R4				;coordenada y
@@ -463,7 +482,7 @@ main_imagem:
 	ADD		R8,		R4				;y final
 	MOV		R9,		R5
 	ADD		R9,		R3				;x final
-	ADD		R10,	3				;avança para primeira posição
+	ADD		R10,	6				;avança para primeira posição
 	
 	imagem_linhas:
 		ADD		R1,		1					;percorre as linhas até a coordenada final ser igual à ultima escrita
@@ -878,7 +897,7 @@ torpedo_move:
 	MOV		R4,		R2
 	CALL	hmovbs			;vai manter apenas o byte de menor peso (00YY)
 	AND		R4,		R4
-	JZ		dest_torpedo	;se o torpedo chegar ao fim do ecrã é apagado
+	JN		dest_torpedo	;se o torpedo chegar ao fim do ecrã é apagado
 	
 	MOV		R1,		0
 	CALL	imagem
