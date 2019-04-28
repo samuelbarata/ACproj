@@ -72,12 +72,12 @@ table_char:						;movimentos do submarino
 			STRING	0,	NMEXESUB	;E
 			STRING	0,	NMEXESUB	;F	⬣
 
-submarino:	STRING	9,20,6,3,1,0		;x, y, largura do submarino (Δx), comprimento (Δy), ativo?, N/A
+submarino:	STRING	9,20,6,3,0,1		;x, y, largura do submarino (Δx), comprimento (Δy), estado [ativo/inativo]x2
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
 
-barco1:		STRING	1,2,8,6,1,0			;x, y, Δx, Δy, ativo?, N/A
+barco1:		STRING	1,2,8,6,0,1			;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,0,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
 			STRING	0,0,1,0,0,0,0,0
@@ -85,23 +85,27 @@ barco1:		STRING	1,2,8,6,1,0			;x, y, Δx, Δy, ativo?, N/A
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	20,9,6,5,1,0		;x, y, Δx, Δy, ativo?, N/A
+barco2:		STRING	20,9,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	1,1,1,1,1,1
 			STRING	0,1,1,1,1,0
 
-torpedo:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo], ativo?, N/A
+torpedo:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	1
 			STRING	1
 			STRING	1
 
-bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo], ativo?, N/A
+			STRING	0	;como o torpedo tem nº impar de pixeis, esta string ocupa espaço para a bala
+						;ficar em endereço par
+
+bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	1
 
-; Tabela de vectores de interrupção																						[n percebo isto]
-tab:		WORD	rot0
+			STRING	0	;espaço pq bala impar
+
+tab:		WORD	rot0; Tabela de interrupções
 			WORD	rot1
 
 SP_final:	TABLE	100H
@@ -215,7 +219,7 @@ dino:								;perder jogo
 PLACE		0
 inicializacao:
 	MOV		SP,		SP_inicial
-	MOV		BTE,	tab			;interrupções																			[n percebo isto]
+	MOV		BTE,	tab			;interrupções
 	CALL	reset_all			;faz reset a todas as variaveis, ecrãs, registos
 main:
 	CALL	teclado				;lê input
@@ -319,8 +323,8 @@ teclado:
 
   ;se tecla anterior == -1:
 	MOV		R8,		R6
-	ADD		R8,		2
-	MOV		R8,		[R8]	;tecla anterior != -1?
+	;ADD		R8,		2
+	MOV		R8,		[R8+2]	;tecla anterior != -1?
 	AND		R8,		R8		;1 => não escrever; 0 => escrever
 	JNZ		tecla_anulada
 
@@ -716,6 +720,10 @@ reset_all:
 	ADD		R0,		1
 	MOVB	[R0],	R1
 
+	ADD		R0,		3
+	MOV		R1,		1			;estado inicial
+	MOV		[R0],	R1
+
   b2_init:
 	MOV		R0,		barco2
 	MOV		R1,		barco2XI	;x inicial
@@ -724,11 +732,24 @@ reset_all:
 	MOV		R1,		barco2YI	;y inicial
 	ADD		R0,		1
 	MOVB	[R0],	R1
+
+	ADD		R0,		3
+	MOV		R1,		1			;estado inicial
+	MOV		[R0],	R1
+
   torpedo_init:
-  	MOV		R0,		torpedo
+	MOV		R0,		torpedo
+	ADD		R0,		4
+	MOV		R1,		0
+	MOV		[R0],	R1
+
+  bala_init:
+  	MOV		R0,		bala
   	ADD		R0,		4
   	MOV		R1,		0
-  	MOVB	[R0],	R1
+  	MOV		[R0],	R1
+
+
 
 	MOV		R0,		submarino	;imagem
 	MOV		R1,		1			;escreve
@@ -847,7 +868,7 @@ torpedo_move:
 	PUSH	R2
 	PUSH	R4
 
-	MOV		R2,		torpedo																								;alterar linha se houver mais torpedos
+	MOV		R2,		torpedo
 
 	MOV		R0,		[R2]	;posição torpedo XXYY
 	MOV		R1,		[R2+4]	;estado [ativo/inativo]
@@ -1013,9 +1034,9 @@ torpedo_cria:
 
 	MOV		R0,		5
 	CMP		R2,		R0
-	JNZ		fim_c_torpedo	;se n foi primida a tecla 5 n faz nada
+	JNZ		fim_c_torpedo	;se não foi primida a tecla 5 não faz nada
 
-	MOV		R2,		torpedo																								;alterar linha se houver mais torpedos
+	MOV		R2,		torpedo
 
 	MOV		R0,		[R2]	;posição torpedo XXYY
 	MOV		R1,		[R2+2]	;tamanho torpedo ∆X∆Y
@@ -1062,6 +1083,7 @@ barcos:
 	MOV		R3,		barco2
 	CALL	barcos_ciclo
 	JMP		fim_barcos
+
 	; ╭─────────────────────────────────────────────────────────────────────╮
 	; │	ROTINA:		barcos_ciclo											│
 	; │	DESCRICAO:	faz os movimentos do barco								│
@@ -1154,6 +1176,123 @@ barcos:
 	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		bala_r													│
+; │	DESCRICAO:	cria/move bala contra submarino							│
+; │																		│
+; │	INPUT:		N/A														│
+; │	OUTPUT:		memoria + pixelscreen + R0[fim jogo]					│
+; │	DESTROI:	R0														│
+; ╰─────────────────────────────────────────────────────────────────────╯
+bala_r:
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R9
+	PUSH	R10
+
+	MOV		R1,		bala
+	MOV		R2,		[R1+4]	;estado da bala
+	AND		R2,		R2
+	JNZ		bala_move
+
+	MOV		R2,		1
+	MOV		[R1+4],	R2		;ativa bala
+	MOV		R2,		submarino
+	MOV		R2,		[R2]		;XXYY submarino
+	MOV		R3,		00FFH	;mascara
+	AND		R2,		R3		;00YY submarino
+	ADD		R2,		1
+	MOV		[R1],	R2		;posição inicial bala
+	PUSH	R0				;a parte da rotina que move a bala destroi R0 por isso o push tem de ser feito aqui
+	MOV		R0,		bala	
+	MOV		R1,		1
+	CALL	imagem			;escreve a bala na X=00 Y = Ysubmarino
+	POP		R0
+	JMP		fim_bala
+	bala_move:
+	MOV		R2,		[R1]	;XXYY	[atual]
+	MOV		R3,		100H	;X++00
+	ADD		R2,		R3		;X++YY
+	MOV		R9,		R2		;XXYY	[seguinte]
+	v_choque:
+		MOV		R6,		00FFH	
+		MOV		R3,		submarino
+		MOV		R4,		[R3]	;XXYYsub
+		MOV		R5,		[R3+2]	;∆X∆Ysub
+		AND		R5,		R6		;00∆Ysub
+		MOV		R10,	R2		;XXYY
+		SHR		R10,	8		;00XX
+		AND		R2,		R6		;00YY
+		MOV		R3,		R4		;XXYYsub
+		SHR		R3,		8		;00XXsub
+		AND		R4,		R6		;00YYsub
+
+		;R1		- bala
+		;R9		- XXYY
+		;R10	- 00XX
+		;R2		- 00YY
+		;R3		- 00XXsub
+		;R4		- 00YYsub
+		;R5		- 00∆Ysub
+
+		;if(YY < YYsub):			OK
+			CMP		R2,		R4
+			JN		bala_continue
+		;if(YYsub + ∆y < YY):		OK
+			MOV		R6,		R4
+			ADD		R6,		R5
+			CMP		R6,		R4
+			JN		bala_continue
+		;if(XX < XXsub):			OK
+			CMP		R10,	R3
+			JN		bala_continue
+		;else:						NO
+			JMP		choque
+
+	bala_continue:
+	;-------Verifica fim ecrã----------
+	MOV		R4,		sub_max_x			;ultima coordenada ecrã
+	CMP		R10,	R4
+	JP		bala_destroi
+	;----------------------------------
+	PUSH	R0				;guarda o estado atual do jogo
+	MOV		R0,		bala
+	MOV		R3,		R1
+	MOV		R1,		0
+	CALL	imagem			;apaga a bala
+	MOV		[R3],	R9		;movimenta a bala
+	MOV		R1,		1		
+	CALL	imagem			;escreve a bala
+	POP		R0
+	JMP		fim_bala
+
+  choque:
+	MOV		R0,		0		;quando voltar ao main o jogo para
+	JMP		fim_bala
+	
+	bala_destroi:
+	PUSH	R0
+	MOV		R0,		bala
+	MOV		R1,		0
+	CALL	imagem			;apaga a bala
+	MOV		[R0+4],	R1		;inativa a bala
+	POP		R0
+
+  fim_bala:
+  	POP		R10
+  	POP		R9
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	RET
+
+; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		hexa_escreve_p1											│
 ; │	DESCRICAO:	incrementa o valor do hexa diplay por 1					│
 ; │																		│
@@ -1162,7 +1301,6 @@ barcos:
 ; │	DESTROI:	R0														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 hexa_escreve_p1:
-
 	PUSH	R1
 	PUSH	R3		;mascara
 	PUSH	R4
@@ -1218,7 +1356,7 @@ random:
 	RET							;devolve	0/1 em R10
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		MOVBS													│
+; │	ROTINA:		hmovbs													│
 ; │	DESCRICAO:	extensão sinal de um byte								│
 ; │																		│
 ; │	INPUT:		R4														│
@@ -1242,11 +1380,6 @@ hmovbs:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Interrupções														│
-; │																		│
-; │	RE:	0000 0000 0000 0000												│
-; │		RNDI IIII TTBA VCNZ												│
-; │		 PEE EEEE DV													│
-; │		   3 210														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 rot0:
 	CALL	barcos
@@ -1254,48 +1387,5 @@ rot0:
 
 rot1:
 	CALL	torpedo_move
+	CALL	bala_r
 	RFE
-
-
-
-;-------------------------------INUITIL PARA PROJETO----------------------------------------
-; ╭─────────────────────────────────────────────────────────────────────╮
-; │	ROTINA:		hexa_escreve_p2											│
-; │	DESCRICAO:	incrementa o valor do hexa diplay2 por 1				│
-; │																		│
-; │	INPUT:		N/A														│
-; │	OUTPUT:		DISPLAY2												│
-; ╰─────────────────────────────────────────────────────────────────────╯
-hexa_escreve_p2:
-
-	PUSH	R1
-	PUSH	R3		;mascara
-	PUSH	R4
-	PUSH	R5
-
-	MOV		R4,		00001010b
-	MOV		R5,		display_valor_2
-	MOV		R1,		[R5]
-	ADD		R1,		1
-	MOV		R3,		00001111b ;isola as unidades
-	AND		R3,		R1
-	CMP		R3,		R4
-	JZ		salta_pra_10_2
-	JMP		hexa_continuacao_2
-
-  salta_pra_10_2:
-	ADD		R1,		6
-	JMP		hexa_continuacao_2
-
-  hexa_continuacao_2:
-	MOV		[R5],	R1
-	MOV		R5,		DISPLAY2
-	MOVB	[R5],	R1
-
-  hexa_fim_2:
-  	POP		R5
-	POP		R4
-	POP		R3
-	POP		R1
-	RET
-
