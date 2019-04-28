@@ -362,18 +362,18 @@ teclado:
 ; │				endereços 8000H - 807FH						│			│
 ; │	INPUT:		Coordenadas X-R0, Y-R1, estado do pixel-R2	│			│
 ; │	OUTPUT:		Periférico pixelscreen						▽ Y			│
-; │	DESTROI:	R2														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 display:
   init_display:
 	PUSH	R0			;contem x
 	PUSH	R1			;contem y
+	;R2 apenas usado em AND por isso nao vale a pena perder tempo em gravar na pilha
 	PUSH	R5			
 	PUSH	R6
 	PUSH	R7
-
-						;byte = screen + (x/4) + 4*y ; pixel = mod(x,8)
-	MOV		R5,		80H			;vai conter a mascara do bit a alterar 80H = 1000 0000
+						;byte = screen + (x/8) + 4*y 
+						;pixel = mod(x,8)
+	MOV		R5,		0080H		;vai conter a mascara do bit a alterar 80H = 1000 0000
 	MOV		R6,		R0			;copia do valor x
 	MOV		R7,		8			;Registo para calculos auxiliares
 	MOD		R6,		R7			;contem posição do bit [0 - 7]
@@ -391,8 +391,8 @@ display:
 	MOV		R7,		4
 	MUL		R1,		R7			;y*4
 	MOV		R7,		PSCREEN		;endereço base do display
-	ADD		R7,		R0			;screen + (x/4)				fimr0
-	ADD		R7,		R1			;screen + (x/4) + 4*y
+	ADD		R7,		R0			;screen + (x/8)
+	ADD		R7,		R1			;screen + (x/8) + 4*y
 
 	MOVB	R6,		[R7]		;vai buscar o byte atual para R6
 	AND		R2,		R2			;verifica o bit do estado do pixel e determina se vai ser ligado ou desligado
@@ -430,6 +430,7 @@ imagem:
 	PUSH	R0
 	PUSH	R1
 	PUSH	R2
+	PUSH	R3
 	PUSH	R7
 	PUSH	R8
 	PUSH	R9
@@ -441,7 +442,7 @@ imagem:
 	MOV		R2,		000FFH	;mascara
 
 	MOV		R1,		[R10]	;XXYY
-	MOV		R0,		R0		;XXYY
+	MOV		R0,		R1		;XXYY
 	SHR		R0,		8		;00XX
 	AND		R1,		R2		;00YY
 	
@@ -450,9 +451,11 @@ imagem:
 	SHR		R9,		8		;00∆X
 	AND		R8,		R2		;00∆Y
 
-	MOV		R2,		R7		;a função display destroi R2
+	MOV		R2,		R7		;a função display destroi R2 por isso precisamos de manter uma cópia
+	MOV		R3,		R0		;00XX
 
-	;R0		-	00XX
+	;R0		-	00XX	atual
+	;R3		-	00XX	inicial
 	;R1		-	00YY
 	;R9		-	00∆X
 	;R8		-	00∆Y
@@ -460,13 +463,13 @@ imagem:
 	;R7;R2	-	escreve/apaga
 
 main_imagem:
-
-	SUB		R1,		1				;o ciclo começa por adicionar 1
 	ADD		R8,		R1				;y final
 	ADD		R9,		R0				;x final
 	ADD		R10,	6				;avança para primeira posição
+	SUB		R1,		1				;o ciclo começa por adicionar 1
 	
 	imagem_linhas:
+		MOV		R0,		R3					;valor inicial x
 		ADD		R1,		1					;percorre as linhas até a coordenada final ser igual à ultima escrita
 		CMP		R8,		R1					
 		JZ		fim_imagem									
@@ -491,6 +494,7 @@ main_imagem:
 	POP		R9
 	POP		R8
 	POP		R7
+	POP		R3
 	POP		R2
 	POP		R1
 	POP		R0
