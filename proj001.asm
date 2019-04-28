@@ -106,7 +106,7 @@ bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 tab:		WORD	rot0; Tabela de interrupções
 			WORD	rot1
 
-SP_final:	TABLE	100H
+SP_final:	TABLE	200H
 SP_inicial:
 
 
@@ -1119,7 +1119,6 @@ barcos:
 		CALL	imagem			;apaga o barco
 
 		MOV		R3,		[R0]	;posição XXYY do barco
-		SUB		R3,		R5
 		MOV		R9,		R3		;XXYY barco t++
 		SHR		R9,		8		;00XX barco t++
 
@@ -1128,9 +1127,12 @@ barcos:
 		JZ		esquerda		;0 move esquerda
 
 	  direita:				;1 move direira
+		ADD		R3,		R5
+		ADD		R9,		1
 		MOV		R10,	[R0+2]	;ΔxΔy
-		SHR		R10,	8		;00(Δx+XX)
-		ADD		R9,		R10
+		SHR		R10,	8		;00Δx
+		SUB		R10,	1		;para não contar 1ª casa
+		ADD		R9,		R10		;00(Δx+XX)
 		PUSH	R4
 		MOV		R4,		R9
 		CALL	hmovbs
@@ -1138,11 +1140,13 @@ barcos:
 		POP		R4
 		MOV		R6,		bar_max_x
 		CMP		R9,		R6		;fica parado ou movimenta
-		JN		barco_continua
+		JP		barco_continua
 		MOV		[R0],	R3		;escreve o movimento
 		JMP		barco_continua
 
 	  esquerda:				;
+		SUB		R3,		R5
+		SUB		R9,		1
 		PUSH	R4
 		MOV		R4,		R9
 		CALL	hmovbs
