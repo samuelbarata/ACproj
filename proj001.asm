@@ -106,6 +106,10 @@ bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 tab:		WORD	rot0; Tabela de interrupções
 			WORD	rot1
 
+interrupcoes:
+			WORD	0		;fica a 1 se a interrupção 0 ocorrer
+			WORD	0		;fica a 1 se a interrupção 1 ocorrer
+
 SP_final:	TABLE	200H
 SP_inicial:
 
@@ -219,16 +223,19 @@ inicializacao:
 	MOV		SP,		SP_inicial
 	MOV		BTE,	tab			;interrupções
 	CALL	reset_all			;faz reset a todas as variaveis, ecrãs, registos
+
 main:
 	CALL	teclado				;lê input
 	CALL	processa_teclado	;analisa input
 	
-	AND		R0,	R0
-	JZ		fim_main			;verifica estado jogo
+	AND		R0,	R0				;verifica estado jogo
+	JZ		fim_main
 	CMP		R0,	1
 	JZ 		inicializacao
 
-	JMP		main				;repete o ciclo principal
+	CALL	processa_interrupcoes	;move os barcos/balas/torpedos
+
+	JMP		main					;repete o ciclo principal
 fim_main:
 	DI
 	PUSH	R0					;guarda o estado do jogo na pilha
@@ -254,8 +261,6 @@ fim:
 	CMP		R0,		1			;0 == ⬣; 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
-
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		teclado													│
@@ -343,7 +348,6 @@ teclado:
 	MOV		[R6+2],	R7		;tecla não foi primida, próxima vez pode escrever
 	JMP		fim_teclado
 
-
   fim_teclado:
 	POP 	R8
 	POP		R7
@@ -415,7 +419,6 @@ display:
 	POP		R1
 	POP		R0
 	RET
-
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		imagem													│
@@ -571,8 +574,6 @@ processa_teclado:
 	POP		R1
 	RET
 
-
-
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		movimento												│
 ; │	DESCRICAO:	Movimenta o submarino									│
@@ -674,6 +675,37 @@ ecra:
 	POP		R0
 	RET
 
+; ╭─────────────────────────────────────────────────────────────────────╮
+; │	ROTINA:		processa_interrupcoes									│
+; │	DESCRICAO:	Chama as funções dos movimentos controlados				│
+; │				pelas interrupções										│
+; │																		│
+; │	INPUT:		memória interrupções									│
+; │	OUTPUT:		N/A														│
+; │	DESTROI:	R10,	R9												│
+; ╰─────────────────────────────────────────────────────────────────────╯
+processa_interrupcoes:
+	MOV		R10,	interrupcoes
+	MOV		R9,		[R10]				;vai buscar a memoria a interrupção dos barcos
+	AND		R9,		R9
+	JNZ		int_barcos					;se ocorreu chama a função
+  back:
+  	MOV		R9,		[R10+2]				;vai buscar interrupção balas/torpedos
+	AND		R9,		R9
+	JNZ		int_torpedos_balas
+	JMP		fim_processa
+  int_barcos:
+  	MOV		R9,		0					;apaga a ultima interrupção
+  	MOV		[R10],	R9
+	CALL	barcos						;movimento barcos
+	JMP		back
+  int_torpedos_balas:
+  	MOV		R9,			0
+  	MOV		[R10+2],	R9				;apaga a ultima interrupção
+	CALL	torpedo_move				;movimento torpedo
+	CALL	bala_r						;movimento bala
+  fim_processa:
+	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		reset_all												│
@@ -742,8 +774,6 @@ reset_all:
   	ADD		R0,		4
   	MOV		R1,		0
   	MOV		[R0],	R1
-
-
 
 	MOV		R0,		submarino	;imagem
 	MOV		R1,		1			;escreve
@@ -1191,6 +1221,7 @@ bala_r:
 	PUSH	R4
 	PUSH	R5
 	PUSH	R6
+	PUSH	R7
 	PUSH	R9
 	PUSH	R10
 
@@ -1223,6 +1254,7 @@ bala_r:
 		MOV		R3,		submarino
 		MOV		R4,		[R3]	;XXYYsub
 		MOV		R5,		[R3+2]	;∆X∆Ysub
+		MOV		R7,		R5		;∆X∆Ysub
 		AND		R5,		R6		;00∆Ysub
 		MOV		R10,	R2		;XXYY
 		SHR		R10,	8		;00XX
@@ -1230,7 +1262,9 @@ bala_r:
 		MOV		R3,		R4		;XXYYsub
 		SHR		R3,		8		;00XXsub
 		AND		R4,		R6		;00YYsub
+		SHR		R7,		8		;00∆Xsub
 		
+
 		SUB		R5,		1
 
 		;R1		- bala
@@ -1240,6 +1274,7 @@ bala_r:
 		;R3		- 00XXsub
 		;R4		- 00YYsub
 		;R5		- 00∆Ysub
+		;R7		- 00∆Xsub
 
 		;if(YY < YYsub):			OK
 			CMP		R2,		R4
@@ -1252,6 +1287,11 @@ bala_r:
 		;if(XX < XXsub):			OK
 			CMP		R10,	R3
 			JN		bala_continue
+		;if(XXsub + ∆xsub < XX)		OK
+			MOV		R6,		R3
+			ADD		R6,		R7
+			CMP		R6,		R10	
+			JN		bala_continue	
 		;else:						NO
 			JMP		choque
 
@@ -1287,6 +1327,7 @@ bala_r:
   fim_bala:
   	POP		R10
   	POP		R9
+  	POP		R7
 	POP		R6
 	POP		R5
 	POP		R4
@@ -1383,12 +1424,25 @@ hmovbs:
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Interrupções														│
-; ╰─────────────────────────────────────────────────────────────────────╯
+; ├─────────────────────────────────────────────────────────────┬───────╯
+; │ Descrição:	Escrevem na memória 1 se a interrupção ocorrer	│
+; ╰─────────────────────────────────────────────────────────────╯
 rot0:
-	CALL	barcos
+	PUSH	R10
+	PUSH	R9
+	MOV		R10,		interrupcoes	;memoria de interrupções ativas
+	MOV		R9,			1
+	MOV		[R10],		R9				;se ocorrer interrupção grava em memória
+	POP		R9
+	POP		R10
 	RFE
 
 rot1:
-	CALL	torpedo_move
-	CALL	bala_r
+	PUSH	R10
+	PUSH	R9
+	MOV		R10,		interrupcoes	;memoria de interrupções ativas
+	MOV		R9,			1
+	MOV		[R10+2],	R9				;se ocorrer interrupção grava em memória
+	POP		R9
+	POP		R10
 	RFE
