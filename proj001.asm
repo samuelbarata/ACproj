@@ -430,10 +430,6 @@ imagem:
 	PUSH	R0
 	PUSH	R1
 	PUSH	R2
-	PUSH	R3
-	PUSH	R4
-	PUSH	R5
-	PUSH	R6
 	PUSH	R7
 	PUSH	R8
 	PUSH	R9
@@ -441,54 +437,39 @@ imagem:
 
 	MOV		R10,	R0		;endereço objeto
 	MOV		R7,		R1		;escreve/apaga imagem
-	MOV		R0,		0		;vai conter coordenada x
-	MOV		R1,		0		;vai conter coordenada y
-	MOV		R2,		0		;vai conter [0 apaga / 1 escreve]
-;---
-;	MOVB	R3,		[R10]	;Xinicial
-;	ADD		R10,		1
-;	MOVB	R4,		[R10]	;Yinicial
-;	ADD		R10,		1
-;	MOVB	R5,		[R10]	;Δx
-;	ADD		R10,		1
-;	MOVB	R6,		[R10]	;Δy
-;---
 
-	MOV		R8,		000FFH	;mascara
+	MOV		R2,		000FFH	;mascara
 
-	MOV		R4,		[R10]	;XXYY
-	MOV		R3,		R4		;XXYY
-	SHR		R3,		8		;00XX
-	AND		R4,		R8		;00YY
+	MOV		R1,		[R10]	;XXYY
+	MOV		R0,		R0		;XXYY
+	SHR		R0,		8		;00XX
+	AND		R1,		R2		;00YY
 	
-	MOV		R6,		[R10+2]	;∆X∆Y
-	MOV		R5,		R6		;∆X∆Y
-	SHR		R5,		8		;00∆X
-	AND		R6,		R8		;00∆Y
+	MOV		R9,		[R10+2]	;∆X∆Y
+	MOV		R8,		R9		;∆X∆Y
+	SHR		R9,		8		;00∆X
+	AND		R8,		R2		;00∆Y
 
+	MOV		R2,		R7		;a função display destroi R2
 
-
-	;R3	-	00XX
-	;R4	-	00YY
-	;R5	-	00∆X
-	;R6	-	00∆Y
-
+	;R0		-	00XX
+	;R1		-	00YY
+	;R9		-	00∆X
+	;R8		-	00∆Y
+	;R10	-	objeto
+	;R7;R2	-	escreve/apaga
 
 main_imagem:
-	MOV		R0,		R3				;coordenada x
-	MOV		R1,		R4				;coordenada y
+
 	SUB		R1,		1				;o ciclo começa por adicionar 1
-	MOV		R8,		R6
-	ADD		R8,		R4				;y final
-	MOV		R9,		R5
-	ADD		R9,		R3				;x final
+	ADD		R8,		R1				;y final
+	ADD		R9,		R0				;x final
 	ADD		R10,	6				;avança para primeira posição
 	
 	imagem_linhas:
 		ADD		R1,		1					;percorre as linhas até a coordenada final ser igual à ultima escrita
 		CMP		R8,		R1					
-		JZ		fim_imagem					
-		MOV		R0,		R3					
+		JZ		fim_imagem									
 		imagem_colunas:						; percorre as colunas
 			MOVB	R2,		[R10]			; vai buscar o bit seguinte à memoria
 			AND		R2,		R2				; verifica se o bit está ativo ou não
@@ -510,10 +491,6 @@ main_imagem:
 	POP		R9
 	POP		R8
 	POP		R7
-	POP		R6
-	POP		R5
-	POP		R4
-	POP		R3
 	POP		R2
 	POP		R1
 	POP		R0
