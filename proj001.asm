@@ -1079,7 +1079,20 @@ barcos:
 		PUSH	R9
 		PUSH	R10
 
-		MOV		R1,		0		;apagar imagem + interrupção
+		MOV		R0,		[R3+4]	;estado do barco
+		AND		R0,		R0
+		JNZ		mover_barco		;se estiver ativo, move-o
+
+		MOV		R1,		1
+		MOV		R0,		R3
+		CALL	imagem
+
+		MOV		R0,		1
+		MOV		[R3+4],	R0		;ativa o barco
+
+		JMP		fim_c_barcos
+	  mover_barco:
+		MOV		R1,		0		;apagar imagem
 		MOV		R5,		0100H	; XXYY = x+1
 		MOV		[R2],	R1
 
