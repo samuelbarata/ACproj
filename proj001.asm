@@ -29,9 +29,9 @@ LINHA			EQU	16		; linha to teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		; submarino posição inicial
 submarinoYI		EQU	20
-barco1XI		EQU	1		; barco1 posição inicial
+barco1XI		EQU	5		; barco1 posição inicial
 barco1YI		EQU	1		
-barco2XI		EQU	20		; barco2 posição inicial
+barco2XI		EQU	25		; barco2 posição inicial
 barco2YI		EQU	8
 sub_max_x		EQU	31		; barreiras invisíveis do submarino
 sub_min_x		EQU	0
@@ -894,6 +894,105 @@ torpedo_move:
 ; │	OUTPUT:		N/A														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 verifica_choque:
+	PUSH	R0
+	PUSH	R1
+	PUSH	R2
+	PUSH	R3
+	PUSH	R4
+	PUSH	R5
+	PUSH	R6
+	PUSH	R7
+	PUSH	R8
+	PUSH	R9
+	PUSH	R10
+	
+	MOV		R0,		torpedo
+	MOV		R1,		sub_max_y
+	MOV		R2,		[R0]
+	MOV		R3,		00FFH
+	AND		R3,		R2			;posição 00YY do torpedo
+	CMP		R1,		R3			;se o torpedo ainda estiver na metade do ecra pertencente ao submarino não precisamos
+								;de testar se bateu em algum barco
+	JN		fim_v_choque
+	SHR		R2,		8
+
+;	R0 - torpedo
+;	R2 - 00XX torpedo
+;	R3 - 00YY torpedo
+
+	MOV		R5,		barco1
+  v_barco:
+
+	MOV		R6,		[R5]		;XXYY	barco
+	MOV		R7,		[R5+2]		;∆X∆Y	barco
+	MOV		R8,		R6			;XXYY	barco
+	SHR		R6,		8			;00XX	barco
+	MOV		R10,	00FFH		;mascara
+	AND		R8,		R10			;00YY	barco
+
+	MOV		R9,		R7
+	SHR		R9,		8	;00∆X
+	AND		R7,		R10	;00∆Y
+
+  ;	R0 - torpedo
+  ;	R2 - 00XX torpedo
+  ;	R3 - 00YY torpedo
+  ;	R5 - barco
+  ;	R7 - 00∆Y barco
+  ;	R9 - 00∆X barco
+  ;	R6 - 00XX barco
+  ;	R8 - 00YY barco
+
+	;if([ybarco + ∆ybarco] < ytorpedo):		OK
+		MOV		R1,		R8
+		ADD		R1,		R7
+		CMP		R1,		R3
+		JN		v_barco_2
+	;if([ytorpedo + ∆ytorpedo] < ybarco):	OK
+		MOV		R1,		[R0+2]		;∆X∆Y	torpedo
+		AND		R1,		R10			;00∆Y torpedo
+		ADD		R1,		R3
+		CMP		R1,		R7
+		JN		v_barco_2
+	;if(xbarco > xtorpedo)					OK
+		CMP		R6,		R2
+		JP		v_barco_2
+
+	;if([xbarco + ∆xbarco] < xtorpedo)		OK
+		MOV		R1,		R6
+		ADD		R1,		R9
+		CMP		R1,		R2
+		JN		v_barco_2
+	;else									X
+		JMP		choca
+  v_barco_2:
+  	MOV		R1,		barco2
+  	CMP		R5,		R1			;verifica se acabou de testar o barco2
+  	JZ		fim_v_choque		;se já verficou ambos sai
+  	SWAP	R5,		R1			;se não, mete o barco no R5 e testa
+  	JMP		v_barco				;repete o ciclo
+
+  choca:				;R5 - barco em que bateu; R0 - torpedo
+	MOV		R1,		0
+	MOV		[R5+4],	R1			;inativa o barco
+	MOV		[R0+4],	R1			;inativa o torpedo
+	CALL	imagem				;apaga o torpedo
+	MOV		R0,		R5			;endereço barco
+	CALL	imagem				;apaga o barco
+	CALL	hexa_escreve_p1		;aumenta os pontos
+
+	fim_v_choque:
+	POP		R10
+	POP		R9
+	POP		R8
+	POP		R7
+	POP		R6
+	POP		R5
+	POP		R4
+	POP		R3
+	POP		R2
+	POP		R1
+	POP		R0	
 	RET
 
 
@@ -987,17 +1086,18 @@ barcos:
 		MOV		R0,		R3		;barco a movimentar
 		CALL	imagem			;apaga o barco
 
+		MOV		R3,		[R0]	;posição XXYY do barco
+		SUB		R3,		R5
+		MOV		R9,		R3		;XXYY barco t++
+		SHR		R9,		8		;00XX barco t++
+
 		CALL	random			;devolve em R10 0/1
 		AND		R10,	R10		
 		JZ		esquerda		;0 move esquerda
 
 	  direita:				;1 move direira
-		MOV		R3,		[R0]	;posição x do barco
-		ADD		R3,		R5
-		MOV		R9,		R3		;XXYY t++
-		SHR		R9,		8		;00XX barco t++
 		MOV		R10,	[R0+2]	;ΔxΔy
-		SHR		R10,	8		;00Δx
+		SHR		R10,	8		;00(Δx+XX)
 		ADD		R9,		R10
 		PUSH	R4
 		MOV		R4,		R9
@@ -1006,15 +1106,11 @@ barcos:
 		POP		R4
 		MOV		R6,		bar_max_x
 		CMP		R9,		R6		;fica parado ou movimenta
-		JP		barco_continua
+		JN		barco_continua
 		MOV		[R0],	R3		;escreve o movimento
 		JMP		barco_continua
 
 	  esquerda:				;
-		MOV		R3,		[R0]	;posição x do barco
-		SUB		R3,		R5
-		MOV		R9,		R3		;XXYY barco t++
-		SHR		R9,		8		;00XX barco t++
 		PUSH	R4
 		MOV		R4,		R9
 		CALL	hmovbs
