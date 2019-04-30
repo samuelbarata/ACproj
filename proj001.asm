@@ -23,7 +23,7 @@ TEC_IN			EQU 0C000H  ; Input teclado			(periférico POUT-2)
 DISPLAY2		EQU	06000H	; Displays hexa extra	(periférico POUT-3)
 PIN				EQU 0E000H  ; endereço do teclado + relogios (periférico PIN)
 PSCREEN			EQU 08000H  ; endereço do ecrã		(pixelscreen)
-LINHA			EQU	16		; linha to teclado a testar primeiro
+LINHA			EQU	16		; linha do teclado a testar primeiro
 NMEXESUB		EQU 2		; valor no qual o teclado não move o sub.
 submarinoXI		EQU	9		; submarino posição inicial
 submarinoYI		EQU	20
@@ -44,8 +44,8 @@ bar_min_x		EQU	0
 
 PLACE		1000H
 
-key_press:	WORD	0				;tecla primida
-			WORD	0				;se no instante anterior uma tecla tinha cido primida (0[escrever]/1[não escrever])
+key_press:	WORD	0				;tecla premida
+			WORD	0				;se no instante anterior uma tecla foi premida (0[escrever]/1[não escrever])
 
 display_valor_1:
 			WORD	0
@@ -101,7 +101,7 @@ torpedo:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 bala:		STRING	1,21,1,1,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	1
 
-			STRING	0	;espaço pq bala impar
+			STRING	0	;espaço para resolver o problema da bala ser impar
 
 tab:		WORD	rot0; Tabela de interrupções
 			WORD	rot1
@@ -184,7 +184,7 @@ fim_jogo:							;ecrã ganhar jogo
 		STRING 018H, 003H, 0F8H, 000H
 		STRING 000H, 000H, 0E0H, 000H
 		STRING 000H, 000H, 000H, 000H
-dino:								;perder jogo
+dino:								;ecra perder jogo
 		STRING 000H, 000H, 000H, 000H
 		STRING 000H, 000H, 03FH, 0F8H
 		STRING 000H, 000H, 07FH, 0FCH
@@ -257,15 +257,15 @@ fim_main:
 	POP		R0					;retorna o estado do jogo
 fim:
 	CALL	teclado				
-	CALL	processa_teclado	;verifica se a tecla de recomeçar foi primida
+	CALL	processa_teclado	;verifica se a tecla de recomeçar foi premida
 	CMP		R0,		1			;0 == ⬣; 1 == inicializacao
 	JZ		inicializacao
 	JMP		fim					;acaba o programa
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		teclado													│
-; │	DESCRICAO:	Verifica que tecla foi primida e guarda na memoria;		│
-; │				caso nenhuma tenha cido primida guarda -1				│
+; │	DESCRICAO:	Verifica que tecla foi premida e guarda na memoria;		│
+; │				caso nenhuma tenha sido premida guarda -1				│
 ; │																		│
 ; │	INPUT:		periférico PIN											│
 ; │	OUTPUT:		Tecla para memoria 'key_press'							│
@@ -286,11 +286,11 @@ teclado:
 	MOV		R1, 	LINHA		; testar a linha
 	MOV		R2, 	PIN			; R2 com o endereço do periférico
 	MOV 	R6, 	key_press	; Onde se guarda o output do teclado
-	MOV 	R7, 	-1			; Valor caso nenhuma tecla seja primida
+	MOV 	R7, 	-1			; Valor caso nenhuma tecla seja premida
 
   ciclo_tec:
  	SHR		R1, 	1		; linha do teclado, passa para a seguinte [anterior]
- 	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi primida e guarda -1 na memória
+ 	JZ		store			; Se estiver a 0 significa que nenhuma das teclas foi premida e guarda -1 na memória
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
 	MOV		R4,		00001111b	; mascara bits teclado
@@ -333,10 +333,10 @@ teclado:
 	tecla_valida:		;guarda a tecla em memoria se a mesma for válida
 	MOV		[R6],	R7
 	MOV		R7,		1		;escreve 1 para por na memoria
-	MOV		[R6+2],	R7		;tecla foi primida, manter a 1 até largar
+	MOV		[R6+2],	R7		;tecla foi premida, manter a 1 até largar
 	JMP		fim_teclado
 
-	tecla_anulada:			;ignora a tecla primida pois ainda é a anterior
+	tecla_anulada:			;ignora a tecla premida pois ainda é a anterior
 	MOV		R7,		-1		;mete -1 na memoria para não acontecer nada mas 
 	MOV		[R6],	R7		;deixa a tecla anterior a 1 para não escrever até ser largada
 	JMP		fim_teclado
@@ -345,7 +345,7 @@ teclado:
 	MOV		R7,		-1
 	MOV		[R6],	R7
 	MOV		R7,		0		;valor pra escrever na memoria
-	MOV		[R6+2],	R7		;tecla não foi primida, próxima vez pode escrever
+	MOV		[R6+2],	R7		;tecla não foi premida, próxima vez pode escrever
 	JMP		fim_teclado
 
   fim_teclado:
@@ -371,7 +371,7 @@ display:
   init_display:
 	PUSH	R0			;contem x
 	PUSH	R1			;contem y
-	;R2 apenas usado em AND por isso nao vale a pena perder tempo em gravar na pilha
+	;R2 apenas usado em AND por isso nao vale a pena perder tempo a gravar na pilha
 	PUSH	R5			
 	PUSH	R6
 	PUSH	R7
@@ -506,7 +506,7 @@ main_imagem:
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		processa_teclado										│
 ; │	DESCRICAO:	Analisa o que fazer com base no input do teclado		│
-; │				temos de verificar se a ultima tecla primida foi		│
+; │				temos de verificar se a ultima tecla premida foi		│
 ; │				igual ou não											│
 ; │																		│
 ; │	INPUT:		Memória 'key_press'										│
@@ -532,9 +532,9 @@ processa_teclado:
 
   main_p_teclado:
 	MOV		R2,		key_press
-	MOV		R2,		[R2]		;ultima tecla primida
+	MOV		R2,		[R2]		;ultima tecla premida
 	
-	CMP		R2,		-1			;nenhuma tecla primida
+	CMP		R2,		-1			;nenhuma tecla premida
 	JZ		fim_p_teclado
 
 	MOV		R4,		11			;B
@@ -551,7 +551,7 @@ processa_teclado:
 	CALL	movimento			;movimenta submarino
 	
 	MOV		R10,	torpedo_cria
-	CALL	R10					;se a tecla 5 for primida é criado um torpedo
+	CALL	R10					;se a tecla 5 for premida é criado um torpedo
 	
 	JMP		fim_p_teclado
 
@@ -596,9 +596,9 @@ movimento:
 
 	MOV		R3,		table_char
 
-  m_ciclo:				;traduz tecla primida em movimento
+  m_ciclo:				;traduz tecla premida em movimento
 	SHL		R2, 	1		;multiplica por 2
-	MOV		R3,		[R3+R2]	;tabema movimentos + linha correta
+	MOV		R3,		[R3+R2]	;tabela movimentos + linha correta
 	CMP		R3, 	NMEXESUB
 	JZ		fim_movimento
 
@@ -979,7 +979,7 @@ verifica_choque:
 	SHR		R9,		8	;00∆X
 	AND		R7,		R10	;00∆Y
 
-	SUB		R7,		1		;como o primeiro pixel o da coordenada, somar o comprimento faira
+	SUB		R7,		1		;(como o primeiro pixel o da coordenada, somar o comprimento faira) ????
 	SUB		R9,		1		;saltar para um pixel após o barco
 
   ;	R0 - torpedo
@@ -1048,7 +1048,7 @@ verifica_choque:
 ; │	ROTINA:		torpedo_cria											│
 ; │	DESCRICAO:	cria um torpedo											│
 ; │																		│
-; │	INPUT:		R2 - ultima tecla primida								│
+; │	INPUT:		R2 - ultima tecla premida								│
 ; │	OUTPUT:		memoria + pixelscreen									│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 torpedo_cria:
@@ -1061,7 +1061,7 @@ torpedo_cria:
 
 	MOV		R0,		5
 	CMP		R2,		R0
-	JNZ		fim_c_torpedo	;se não foi primida a tecla 5 não faz nada
+	JNZ		fim_c_torpedo	;se não foi premida a tecla 5 não faz nada
 
 	MOV		R2,		torpedo
 
