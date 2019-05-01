@@ -348,7 +348,7 @@ teclado:
 	POP		R2
 	POP		R1
 	RET
-teste penis
+
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		display									   0┌───────▷ X	│
 ; │	DESCRICAO:	Altera o estado de 1 pixel					│			│
@@ -535,15 +535,8 @@ main_imagem:
 ; │	C		D		E		F ⬣	│
 ; ╰─────────────────────────────╯
 processa_teclado:
-	PUSH	R1
 	PUSH	R2
-	PUSH	R3
 	PUSH	R4
-	PUSH	R5
-	PUSH	R6
-	PUSH	R7
-	PUSH	R8
-	PUSH	R9
 	PUSH	R10
 
   main_p_teclado:
@@ -579,15 +572,8 @@ processa_teclado:
 
   fim_p_teclado:
 	POP		R10
-	POP		R9
-	POP		R8
-	POP		R7
-	POP		R6
-	POP		R5
 	POP		R4
-	POP		R3
 	POP		R2
-	POP		R1
 	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
@@ -604,11 +590,6 @@ movimento:
 	PUSH	R3
 	PUSH	R4
 	PUSH	R5
-	PUSH	R6
-	PUSH	R7
-	PUSH	R8
-	PUSH	R9
-	PUSH	R10
 
 	MOV		R3,		table_char
 
@@ -645,11 +626,6 @@ movimento:
 	CALL	imagem			;escreve o submarino
 
   fim_movimento:
-	POP		R10
-	POP		R9
-	POP		R8
-	POP		R7
-	POP		R6
 	POP		R5
 	POP		R4
 	POP		R3
