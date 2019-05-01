@@ -83,7 +83,7 @@ barco1:		STRING	1,2,8,6,0,1			;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	20,9,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
+barco2:		STRING	16,9,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
@@ -434,6 +434,8 @@ imagem:
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
+	PUSH	R4
+	PUSH	R5
 	PUSH	R7
 	PUSH	R8
 	PUSH	R9
@@ -441,6 +443,7 @@ imagem:
 
 	MOV		R10,	R0		;endereço objeto
 	MOV		R7,		R1		;escreve/apaga imagem
+	MOV		R5,		bar_max_x
 
 	MOV		R2,		000FFH	;mascara
 
@@ -457,6 +460,10 @@ imagem:
 	MOV		R2,		R7		;a função display destroi R2 por isso precisamos de manter uma cópia
 	MOV		R3,		R0		;00XX
 
+	MOV		R4,		R5
+	CALL	hmovbs
+	MOV		R5,		R4
+
 	;R0		-	00XX	atual
 	;R3		-	00XX	inicial
 	;R1		-	00YY
@@ -464,8 +471,13 @@ imagem:
 	;R8		-	00∆Y
 	;R10	-	objeto
 	;R7;R2	-	escreve/apaga
+	;R5		-	bar_max_x
 
 main_imagem:
+	MOV		R4,		R0				;00XX
+	CALL	hmovbs
+	MOV		R0,		R4				;XXXX
+
 	ADD		R8,		R1				;y final
 	ADD		R9,		R0				;x final
 	ADD		R10,	6				;avança para primeira posição
@@ -488,6 +500,19 @@ main_imagem:
 			JMP		imagem_colunas			; se não repete
 
   chamada_display:
+  	MOV		R4,		R0				;00XX
+	CALL	hmovbs
+	MOV		R0,		R4				;XXXX
+	;if(00XX>R5)	JMP					;fora lado direito
+		CMP		R0,		R5
+		JP		after_chama_disp
+	;if(x<0)	JMP						;fora lado esquerdo
+		AND		R0,		R0
+
+		
+
+		;fim aux
+		JN		after_chama_disp			; se estiver fora do ecrã não imprime nada
   		MOV		R2,		R7					; escreve 0 ou 1 com base se queremos apagar ou escrever a imagem
 		CALL	display						; chama a rotina display com R0 X; R1 Y; R2 [escreve/apaga]
 		JMP		after_chama_disp			; volta para a posição anterior
@@ -497,6 +522,8 @@ main_imagem:
 	POP		R9
 	POP		R8
 	POP		R7
+	POP		R5
+	POP		R4
 	POP		R3
 	POP		R2
 	POP		R1
@@ -1104,7 +1131,6 @@ torpedo_cria:
 ; ╰─────────────────────────────────────────────────────────────────────╯
 barcos:
 	PUSH	R3
-
 	MOV		R3,		barco1
 	CALL	barcos_ciclo
 	MOV		R3,		barco2
@@ -1123,6 +1149,7 @@ barcos:
 		PUSH	R1
 		PUSH	R2
 		PUSH	R3
+		PUSH	R4
 		PUSH	R5
 		PUSH	R6
 		PUSH	R9
@@ -1130,63 +1157,60 @@ barcos:
 
 		MOV		R0,		[R3+4]	;estado do barco
 		AND		R0,		R0
-		JNZ		mover_barco		;se estiver ativo, move-o
+		JNZ		mover_barco
+		;barco inativo
+	  inativo:
+		MOV		R1,		bar_max_x
+		MOVB	R0,		[R3]	;XX barco
+		CMP		R1,		R0		;vê se está dentro do ecrã
+		JN		cria_barco		;está fora ecrã
+		;inativo_dentro_ecrã
+		ADD		R0,		1		;XX++
+		MOVB	[R3],	R0		;update posição barco
 
+	  cria_barco:
+		CALL	random			;devolve em R10 [0 - 7]
+		ADD		R10,	1
+		MOV		R6,		[R3+2]	;∆X∆Y
+		SHR		R6,		8		;00∆X
+		MOV		R5,		0		;x = 0
+		SUB		R5,		R6		;x inicial barco
+		ADD		R5,		1		;começar logo com o 1º pixel dentro do ecrã
+
+		MOVB	[R3],	R5		;XX barco
+		ADD		R3,		1		;endereço YY
+		MOVB	[R3],	R10		;YY barco
+		SUB		R3,		1		;endereço inicial barco
 		MOV		R1,		1
+		MOV		[R3+4],	R1		;ativa o barco
 		MOV		R0,		R3
-		CALL	imagem
-
-		MOV		R0,		1
-		MOV		[R3+4],	R0		;ativa o barco
+		CALL	imagem			;imprime o barco
 
 		JMP		fim_c_barcos
+
 	  mover_barco:
 		MOV		R1,		0		;apagar imagem
-		MOV		R5,		0100H	; XXYY = x+1
-		MOV		[R2],	R1
-
 		MOV		R0,		R3		;barco a movimentar
 		CALL	imagem			;apaga o barco
 
+		MOV		R5,		0100H	; XXYY = x+1
 		MOV		R3,		[R0]	;posição XXYY do barco
-		MOV		R9,		R3		;XXYY barco t++
-		SHR		R9,		8		;00XX barco t++
 
-		CALL	random			;devolve em R10 0/1
-		AND		R10,	R10		
-		JZ		esquerda		;0 move esquerda
+		ADD		R3,		R5		;(XX+1)YY
+		MOV		[R0],	R3
+		MOV		R9,		R3
+		SHR		R9,		8		;00XX
 
-	  direita:				;1 move direira
-		ADD		R3,		R5
-		ADD		R9,		1
-		MOV		R10,	[R0+2]	;ΔxΔy
-		SHR		R10,	8		;00Δx
-		SUB		R10,	1		;para não contar 1ª casa
-		ADD		R9,		R10		;00(Δx+XX)
-		PUSH	R4
-		MOV		R4,		R9
-		CALL	hmovbs
-		MOV		R9,		R4		;faz extensão de sinal 
-		POP		R4
 		MOV		R6,		bar_max_x
-		CMP		R9,		R6		;fica parado ou movimenta
-		JP		barco_continua
-		MOV		[R0],	R3		;escreve o movimento
-		JMP		barco_continua
-
-	  esquerda:				;
-		SUB		R3,		R5
-		SUB		R9,		1
-		PUSH	R4
 		MOV		R4,		R9
-		CALL	hmovbs
-		MOV		R9,		R4		;faz extensão de sinal 
-		POP		R4
-		MOV		R6,		bar_min_x
-		CMP		R9,		R6		;fica parado ou movimenta
-		JN		barco_continua
-		MOV		[R0],	R3		;escreve o movimento
-		JMP		barco_continua
+		CALL	hmovbs			;extende sinal
+		CMP		R6,		R4		;barco - limite
+		JNN		barco_continua	
+
+	  inativa_barco:
+		MOV		R1,		0
+		MOV		[R0+4],	R1
+		JMP		fim_c_barcos
 
 	  barco_continua:
 		MOV		R1,		1
@@ -1196,6 +1220,7 @@ barcos:
 		POP		R9
 		POP		R6
 		POP		R5
+		POP		R4
 		POP		R3
 		POP		R2
 		POP		R1
@@ -1393,7 +1418,7 @@ random:
 	PUSH	R0
 	MOV		R10,	DISPLAY2	
 	MOVB	R10,	[R10]		;contem valor ao calhas
-	MOV		R0,		00000001b	;mascara bit menor peso
+	MOV		R0,		00000111b	;mascara numero [0 a 7]
 	AND		R10,	R0			;filtra um unico bit
 	POP		R0
 	RET							;devolve	0/1 em R10
