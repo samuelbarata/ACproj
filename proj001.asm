@@ -348,7 +348,7 @@ teclado:
 	POP		R2
 	POP		R1
 	RET
-
+teste penis
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		display									   0┌───────▷ X	│
 ; │	DESCRICAO:	Altera o estado de 1 pixel					│			│
