@@ -1158,8 +1158,8 @@ barcos:
 		MOVB	[R3],	R0		;update posição barco
 
 	  cria_barco:
-		CALL	random			;devolve em R10 [0 - 7]
-		ADD		R10,	1
+		CALL	random			;devolve em R10 [0 - 3]
+		ADD		R10,	1		;apenas 0 a 3 pois os barcos apenas se movimentam nos primeiros [1 - 10] px do ecrã
 		MOV		R6,		[R3+2]	;∆X∆Y
 		SHR		R6,		8		;00∆X
 		MOV		R5,		0		;x = 0
@@ -1407,7 +1407,7 @@ random:
 	PUSH	R0
 	MOV		R10,	DISPLAY2	
 	MOVB	R10,	[R10]		;contem valor ao calhas
-	MOV		R0,		00000111b	;mascara numero [0 a 7]
+	MOV		R0,		00000011b	;mascara numero [0 a 3]
 	AND		R10,	R0			;filtra um unico bit
 	POP		R0
 	RET							;devolve	0/1 em R10
