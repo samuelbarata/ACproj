@@ -29,12 +29,12 @@ submarinoXI		EQU	9		; submarino posição inicial
 submarinoYI		EQU	20
 barco1XI		EQU	5		; barco1 posição inicial
 barco1YI		EQU	1		
-barco2XI		EQU	25		; barco2 posição inicial
-barco2YI		EQU	8
+barco2XI		EQU	19		; barco2 posição inicial
+barco2YI		EQU	2
 sub_max_x		EQU	31		; barreiras invisíveis do submarino
 sub_min_x		EQU	0
 sub_max_y		EQU	31
-sub_min_y		EQU	15
+sub_min_y		EQU	12
 bar_max_x		EQU	31		; barreiras invisíveis dos barcos
 bar_min_x		EQU	0
 
