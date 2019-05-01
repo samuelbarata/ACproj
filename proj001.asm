@@ -83,7 +83,7 @@ barco1:		STRING	1,2,8,6,0,1			;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,1,1,1,1,1,0
 			STRING	0,0,1,1,1,1,0,0
 
-barco2:		STRING	16,9,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
+barco2:		STRING	16,2,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,0,0,0,0
 			STRING	0,0,1,0,0,0
 			STRING	0,0,1,0,0,0
@@ -280,7 +280,6 @@ teclado:
 	PUSH	R5
 	PUSH	R6
 
-
 	MOV		R1, 	LINHA		; testar a linha
 	MOV		R2, 	PIN			; R2 com o endereço do periférico, diz qual das 4 teclas da linha foi premida
 	MOV 	R5, 	TEC_IN		; R5 com endereço de memória Input teclado, usamos para o teclado saber a linha a ler
@@ -293,8 +292,7 @@ teclado:
 	MOVB 	[R5],	R1		; input teclado
 	MOVB 	R3, 	[R2]	; output teclado
 	MOV		R4,		00001111b	; mascara bits teclado
-	AND		R3,		R4		; isola os bits do teclado dos do relógio
-	AND 	R3,		R3		; afectar as flags (MOVs não afectam as flags) - verifica se alguma tecla foi pressionada
+	AND		R3,		R4		; isola os bits do teclado dos do relógio e atualiza flags do valor de R3
 	JZ 		ciclo_tec		; nenhuma tecla premida
 
 	MOV 	R2, 	-1		; contador colunas
@@ -302,11 +300,10 @@ teclado:
 
   linhas:
 	CMP		R1, 	1		; verifica se o bit de menor peso é 1
-	JZ		add_linhas			; se for vai avaliar a mesma coisa nas linhas
+	JZ		add_linhas		; se for vai avaliar a mesma coisa nas linhas
 	ADD		R4, 	1		; se não for adiciona 1 ao contador
 	SHR		R1, 	1		; desloca o numero para a direita
 	JMP		linhas			; repete até determinar o nº de linhas
-
 
   add_linhas:
   	SHL		R4, 	2		; linha * 4
@@ -314,40 +311,38 @@ teclado:
   colunas:
 	SHR		R3, 	1
 	ADD		R2, 	1
-	CMP		R3, 	0		; SHR atualiza flags?? se sim esta linha nao é precisa
+	AND		R3, 	R3		; atualiza flags R3
 	JNZ		colunas	
 	ADD		R4, 	R2		; (linha*4) + coluna
-	;MOV 	R7, 	R4		; sol temporária, só para nao mudar o prox R7
 
   store:
 	CMP		R4,		-1
 	JZ		tecla_nula
 
   ;se tecla anterior == -1:
-	MOV		R1,		[R6+2]	;tecla anterior != -1?
-	AND		R1,		R1		;1 => não escrever; 0 => escrever
-	JNZ		tecla_anulada
+	MOV		R1,		[R6+2]	; tecla anterior premida ou não
+	AND		R1,		R1		; 1 => não escrever; 0 => escrever
+	JNZ		tecla_anulada	; ignora a tecla se anteriormente outra tiver sido premida
 
 	tecla_valida:		;guarda a tecla em memoria se a mesma for válida
 	MOV		[R6],	R4
-	MOV		R4,		1		;escreve 1 para por na memoria
-	MOV		[R6+2],	R4		;tecla foi premida, manter a 1 até largar
+	MOV		R4,		1		; escreve 1 para por na memoria
+	MOV		[R6+2],	R4		; tecla foi premida, manter a 1 até largar
 	JMP		fim_teclado
 
-	tecla_anulada:			;ignora a tecla premida pois ainda é a anterior
-	MOV		R4,		-1		;mete -1 na memoria para não acontecer nada mas 
-	MOV		[R6],	R4		;deixa a tecla anterior a 1 para não escrever até ser largada
+	tecla_anulada:			; ignora a tecla premida pois ainda é a anterior
+	MOV		R4,		-1		; mete -1 na memoria para não acontecer nada mas 
+	MOV		[R6],	R4		; deixa a tecla anterior a 1 para não escrever até ser largada
 	JMP		fim_teclado
 
 	tecla_nula:
 	MOV		R4,		-1
-	MOV		[R6],	R4
-	MOV		R4,		0		;valor para escrever na memoria
-	MOV		[R6+2],	R4		;tecla não foi premida, próxima vez pode escrever
+	MOV		[R6],	R4		; grava -1 na memoria pra simbolizar que nenhuma tecla foi premida
+	MOV		R4,		0		; valor para escrever na memoria
+	MOV		[R6+2],	R4		; tecla não foi premida, próxima vez pode escrever
 	JMP		fim_teclado
 
   fim_teclado:
-
 	POP		R6
 	POP		R5
 	POP		R4
