@@ -217,11 +217,54 @@ dino:								;ecra perder jogo
 		STRING 000H, 020H, 040H, 000H
 		STRING 000H, 030H, 060H, 000H
 		STRING 000H, 000H, 000H, 000H
+press_b_to_start:					;ecrã que aparece no inicio do jogo
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 0FFH, 00H, 00H, 0FFH
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+		STRING 00H, 00H, 00H, 00H
+
 
 PLACE		0
-inicializacao:
-	MOV		SP,		SP_inicial
-	MOV		BTE,	tab			;interrupções
+MOV		SP,		SP_inicial
+MOV		BTE,	tab					;interrupções
+MOV		R0,		press_b_to_start	;mostra um menu inicial
+CALL	ecra
+ciclo_inicial:
+	CALL	teclado
+	CALL	processa_teclado
+	CMP		R0,	1					;espera até receber 'B' pra começar o jogo
+	JZ 		inicializacao
+	JMP		ciclo_inicial
+
+inicializacao:	
 	CALL	reset_all			;faz reset a todas as variaveis, ecrãs, registos
 
 main:
@@ -958,6 +1001,9 @@ verifica_choque:
 ;	R3 - 00YY torpedo
 
 	MOV		R5,		barco1
+	MOV		R10,	[R5+4]		;estado do barco a comparar
+	AND		R10,	R10
+	JZ		v_barco_2			;se for 0 n verifica
   v_barco:
 
 	MOV		R6,		[R5]		;XXYY	barco
@@ -1010,6 +1056,9 @@ verifica_choque:
   	CMP		R5,		R1			;verifica se acabou de testar o barco2
   	JZ		fim_v_choque		;se já verficou ambos sai
   	SWAP	R5,		R1			;se não, mete o barco no R5 e testa
+	MOV		R10,	[R1+4]		;estado do barco a comparar
+	AND		R10,	R10
+	JZ		fim_v_choque		;se estiver inativo n verifica
   	JMP		v_barco				;repete o ciclo
 
   choca:				;R5 - barco em que bateu; R0 - torpedo
@@ -1132,6 +1181,7 @@ barcos:
 		;inativo_dentro_ecrã
 		ADD		R0,		1		;XX++
 		MOVB	[R3],	R0		;update posição barco
+		JMP		fim_c_barcos
 
 	  cria_barco:
 		CALL	random			;devolve em R10 [0 - 3]
