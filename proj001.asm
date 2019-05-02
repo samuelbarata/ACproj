@@ -38,6 +38,7 @@ sub_min_y		EQU	12
 bar_max_x		EQU	31		; barreiras invisíveis dos barcos
 bar_min_x		EQU	0
 CAIXA			EQU	1		; se estiver a 0 o submarino é atingido como caixa, se estiver a 1 é atingido como objeto
+WIN				EQU 20		; Nº de pontos para ganhar [0 - 99]
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Memória																│
@@ -1442,29 +1443,29 @@ hexa_escreve_p1:
 	PUSH	R5
 
 	MOV		R4,		00001010b
-	MOV		R5,		display_valor_1
+	MOV		R5,		display_valor_1		;endereço pontos atuais
 	MOV		R1,		[R5]
 	ADD		R1,		1
-	MOV		R3,		00001111b ;isola as unidades
+	MOV		R3,		00001111b 			;isola as unidades
 	AND		R3,		R1
+	MOV		R5,		WIN					;pontos para ganhar
+	CMP		R3,		R5
+	JZ		hexa_fim_jogo				;se atingir ganha
 	CMP		R3,		R4
 	JZ		salta_pra_10
 	JMP		hexa_continuacao
 
   salta_pra_10:
 	ADD		R1,		6
-	MOV		R4,		10100000b	;valor maximo
-	CMP		R4,		R1
-	JZ		hexa_fim_jogo
 	JMP		hexa_continuacao
 
   hexa_fim_jogo:
-	MOV		R0,		0
-	JMP		hexa_fim
+	MOV		R0,		0			;estado do jogo parado
   hexa_continuacao:
-	MOV		[R5],	R1
-	MOV		R5,		DISPLAY1
-	MOVB	[R5],	R1
+	MOV		R5,		display_valor_1		;endereço pontos atuais
+	MOV		[R5],	R1					;substitui pelos novos
+	MOV		R5,		DISPLAY1			
+	MOVB	[R5],	R1					;mostra no display
 
   hexa_fim:
   	POP		R5
