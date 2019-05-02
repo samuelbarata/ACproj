@@ -37,6 +37,7 @@ sub_max_y		EQU	31
 sub_min_y		EQU	12
 bar_max_x		EQU	31		; barreiras invisíveis dos barcos
 bar_min_x		EQU	0
+CAIXA/desenho	EQU	1		; se estiver a 0 o submarino é atingido como caixa, se estiver a 1 é atingido como objeto
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Memória																│
@@ -1333,6 +1334,23 @@ bala_r:
 			CMP		R6,		R10	
 			JN		bala_continue	
 		;else:						NO
+			MOV		R6,		CAIXA			; se CAIXA contiver 1 o submarino é tratado como objeto e assume que
+			AND		R6,		R6				; chocou. Desativar CAIXA no inicio do código se ocorrerem erros nas
+			JZ		choque					; colisões da bala.
+			;verificar objeto em vez de caixa
+			;R6 = inicio desenho submarino
+			MOV		R6,		submarino
+			ADD		R6,		6
+			;R6 += ∆xsub*(YY-YYsub)
+			SUB		R2,		R4			;(YYsub-YY) ;destroi R2
+			MUL		R2,		R7			;∆xsub*(YYsub-YY)
+			ADD		R6,		R2			;RZ+=^ [inicio da linha certa do submarino]
+			;R6 += XX-XXsub
+			SUB		R10,	R3			;XXsub-XX ;destroi R3
+			ADD		R6,		R10			;contem o pixel do submarino onde a bala está
+			MOVB	R6,		[R6]		;vai buscar o pixel à memória
+			AND		R6,		R6			;verifica se essa parte da caixa é submarino ou não
+			JZ		bala_continue		;se for 0 é apenas "água"
 			JMP		choque
 
 	bala_continue:
