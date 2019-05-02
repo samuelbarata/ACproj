@@ -39,6 +39,7 @@ bar_max_x		EQU	31		; barreiras invisíveis dos barcos
 bar_min_x		EQU	0
 CAIXA			EQU	1		; se estiver a 0 o submarino é atingido como caixa, se estiver a 1 é atingido como objeto
 WIN				EQU 20		; Nº de pontos para ganhar [0 - 99]
+SPAWNDISTANCE	EQU	2		; distancia minima entre barcos
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Memória																│
@@ -50,7 +51,7 @@ key_press:	WORD	0				;tecla premida
 			WORD	0				;se no instante anterior uma tecla foi premida (0[escrever]/1[não escrever])
 
 display_valor_1:
-			WORD	0
+			WORD	0				;contador pontos
 display_valor_2:
 			WORD	0
 
@@ -76,6 +77,10 @@ submarino:	STRING	9,20,6,3,0,1		;x, y, largura do submarino (Δx), comprimento (
 			STRING	0,0,1,1,0,0
 			STRING	0,0,0,1,0,0
 			STRING	1,1,1,1,1,1
+
+barcos_tab:	WORD	barco1				;tabela que contem os barcos no jogo
+			WORD	barco2
+			WORD	0000H				;fim tabela
 
 barco1:		STRING	1,2,8,6,0,1			;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	0,1,0,0,0,0,0,0
@@ -301,7 +306,8 @@ fim_main:
 	PUSH	R1
 
 	MOV		R1,		display_valor_1
-	MOV		R0,		0099H
+	MOV		R1,		[R1]
+	MOV		R0,		WIN
 	CMP		R1,		R0		;verifica se o jogador chegou aos 99
 	JZ		ganha
   perde:						;perde o jogo
@@ -954,12 +960,12 @@ verifica_movimentos:
 ; │	OUTPUT:		torpedo pixelscreen + memoria							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 torpedo_move:
-	PUSH	R0
+	PUSH	R3
 	PUSH	R1
 	PUSH	R2
 	PUSH	R4
 
-	MOV		R0,		[R2]	;posição torpedo XXYY
+	MOV		R3,		[R2]	;posição torpedo XXYY
 	MOV		R1,		[R2+4]	;estado [ativo/inativo]
 	SHR		R1,		8		;elimina o byte seguinte
 
@@ -967,7 +973,7 @@ torpedo_move:
 	JZ		fim_m_torpedo
 
 	move_torpedo:
-	SWAP	R0,		R2		;troca posição com memoria do torpedo
+	SWAP	R3,		R2		;troca posição com memoria do torpedo
 	SUB		R2,		1
 
 	MOV		R4,		R2
@@ -975,36 +981,44 @@ torpedo_move:
 	AND		R4,		R4
 	JN		dest_torpedo	;se o torpedo chegar ao fim do ecrã é apagado
 	
+	PUSH	R0
+	MOV		R0,		R3		;copia do torpedo em R0 para função imagem
 	MOV		R1,		0
 	CALL	imagem
-	MOV		[R0],	R2
+	MOV		[R3],	R2
 	MOV		R1,		1
-	CALL	imagem	
+	
+	MOV		R0,		R3
+	CALL	imagem
+	POP		R0	
+	
 	CALL	verifica_choque
 	JMP		fim_m_torpedo
 
 	dest_torpedo:
-	MOV		R1,		0	
+	MOV		R1,		0
+	PUSH	R0
+	MOV		R0,		R3	
 	CALL	imagem			;apaga o torpedo
-	ADD		R0,		4
-	MOVB	[R0],	R1		;inativa o torpedo
+	POP		R0
+	ADD		R3,		4
+	MOVB	[R3],	R1		;inativa o torpedo
 
   fim_m_torpedo:
 	POP		R4
 	POP		R2
 	POP		R1
-	POP		R0
+	POP		R3
 	RET
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │	ROTINA:		verifica_choque											│
 ; │	DESCRICAO:	verifica se o torpedo atingiu um barco					│
 ; │																		│
-; │	INPUT:		R0	-	torpedo											│
+; │	INPUT:		R3	-	torpedo											│
 ; │	OUTPUT:		N/A														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 verifica_choque:
-	PUSH	R0
 	PUSH	R1
 	PUSH	R2
 	PUSH	R3
@@ -1017,17 +1031,17 @@ verifica_choque:
 	PUSH	R10
 	
 	MOV		R1,		sub_max_y
-	MOV		R2,		[R0]
-	MOV		R3,		00FFH
-	AND		R3,		R2			;posição 00YY do torpedo
-	CMP		R1,		R3			;se o torpedo ainda estiver na metade do ecra pertencente ao submarino não precisamos
+	MOV		R2,		[R3]
+	MOV		R4,		00FFH
+	AND		R4,		R2			;posição 00YY do torpedo
+	CMP		R1,		R4			;se o torpedo ainda estiver na metade do ecra pertencente ao submarino não precisamos
 								;de testar se bateu em algum barco
 	JN		fim_v_choque
 	SHR		R2,		8
 
-;	R0 - torpedo
+;	R3 - torpedo
 ;	R2 - 00XX torpedo
-;	R3 - 00YY torpedo
+;	R4 - 00YY torpedo
 
 	MOV		R5,		barco1
 	MOV		R10,	[R5+4]		;estado do barco a comparar
@@ -1049,9 +1063,9 @@ verifica_choque:
 	SUB		R7,		1		;(como o primeiro pixel o da coordenada, somar o comprimento faira) ????
 	SUB		R9,		1		;saltar para um pixel após o barco
 
-  ;	R0 - torpedo
+  ;	R3 - torpedo
   ;	R2 - 00XX torpedo
-  ;	R3 - 00YY torpedo
+  ;	R4 - 00YY torpedo
   ;	R5 - barco
   ;	R7 - 00∆Y barco
   ;	R9 - 00∆X barco
@@ -1061,12 +1075,12 @@ verifica_choque:
 	;if([ybarco + ∆ybarco] < ytorpedo):		OK
 		MOV		R1,		R8
 		ADD		R1,		R7
-		CMP		R1,		R3
+		CMP		R1,		R4
 		JN		v_barco_2
 	;if([ytorpedo + ∆ytorpedo] < ybarco):	OK
-		MOV		R1,		[R0+2]		;∆X∆Y	torpedo
+		MOV		R1,		[R3+2]		;∆X∆Y	torpedo
 		AND		R1,		R10			;00∆Y torpedo
-		ADD		R1,		R3
+		ADD		R1,		R4
 		CMP		R1,		R7
 		JN		v_barco_2
 	;if(xbarco > xtorpedo)					OK
@@ -1090,13 +1104,16 @@ verifica_choque:
 	JZ		fim_v_choque		;se estiver inativo n verifica
   	JMP		v_barco				;repete o ciclo
 
-  choca:				;R5 - barco em que bateu; R0 - torpedo
+  choca:				;R5 - barco em que bateu; R3 - torpedo
 	MOV		R1,		0
 	MOV		[R5+4],	R1			;inativa o barco
-	MOV		[R0+4],	R1			;inativa o torpedo
+	MOV		[R3+4],	R1			;inativa o torpedo
+	PUSH	R0
+	MOV		R0,		R3
 	CALL	imagem				;apaga o torpedo
 	MOV		R0,		R5			;endereço barco
 	CALL	imagem				;apaga o barco
+	POP		R0
 	CALL	hexa_escreve_p1		;aumenta os pontos
 
 	fim_v_choque:
@@ -1109,8 +1126,7 @@ verifica_choque:
 	POP		R4
 	POP		R3
 	POP		R2
-	POP		R1
-	POP		R0	
+	POP		R1	
 	RET
 
 
@@ -1209,14 +1225,24 @@ barcos:
 		AND		R0,		R0
 		JNZ		mover_barco
 		;barco inativo
+		MOV		R0,		barcos_tab
 	  inativo:
-		MOV		R1,		bar_max_x
-		MOVB	R0,		[R3]	;XX barco
-		CMP		R1,		R0		;vê se está dentro do ecrã
-		JN		cria_barco		;está fora ecrã
-		;inativo_dentro_ecrã
-		ADD		R0,		1		;XX++
-		MOVB	[R3],	R0		;update posição barco
+		;R0	-	tabela barcos
+		;R3 -	barco
+		MOV		R2,		[R0]			;vai buscar um barco à memoria
+		ADD		R0,		2				;avança memória seguinte
+		AND		R2,		R2				;verifica se chegou ao fim da tabela
+		JZ		fim_verifica_outros
+		CMP		R2,		R3				;verifica se n está a comparar com o próprio barco
+		JZ		inativo
+		;(if XXoutrobarco> 2)
+			MOVB	R4,		[R2]			;00XX outro barco [ob]
+			CALL	hmovbs					;extenção sinal XXXXob
+			MOV		R2,		SPAWNDISTANCE	;distância minima para spawnarem
+			CMP		R4,		R2
+			JP		cria_barco				;se existir distância suficiente spawna
+		JMP		inativo
+	fim_verifica_outros:
 		JMP		fim_c_barcos
 
 	  cria_barco:
