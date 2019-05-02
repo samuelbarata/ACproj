@@ -37,7 +37,7 @@ sub_max_y		EQU	31
 sub_min_y		EQU	12
 bar_max_x		EQU	31		; barreiras invisíveis dos barcos
 bar_min_x		EQU	0
-CAIXA/desenho	EQU	1		; se estiver a 0 o submarino é atingido como caixa, se estiver a 1 é atingido como objeto
+CAIXA			EQU	1		; se estiver a 0 o submarino é atingido como caixa, se estiver a 1 é atingido como objeto
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Memória																│
@@ -91,7 +91,20 @@ barco2:		STRING	16,2,6,5,0,1		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	1,1,1,1,1,1
 			STRING	0,1,1,1,1,0
 
-torpedo:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
+torpedos_tab:
+			WORD	torpedo1
+			WORD	torpedo2
+			WORD	0000H				;fim tabela
+
+torpedo1:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
+			STRING	1
+			STRING	1
+			STRING	1
+
+			STRING	0	;como o torpedo tem nº impar de pixeis, esta string ocupa espaço para a bala
+						;ficar em endereço par
+
+torpedo2:	STRING	10,16,1,3,0,0		;x, y, Δx, Δy, estado [ativo/inativo]x2
 			STRING	1
 			STRING	1
 			STRING	1
@@ -719,7 +732,7 @@ ecra:
 ; │																		│
 ; │	INPUT:		memória interrupções									│
 ; │	OUTPUT:		N/A														│
-; │	DESTROI:	R10,	R9												│
+; │	DESTROI:	R10,	R9,		R2										│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 processa_interrupcoes:
 	MOV		R10,	interrupcoes
@@ -739,7 +752,16 @@ processa_interrupcoes:
   int_torpedos_balas:
   	MOV		R9,			0
   	MOV		[R10+2],	R9				;apaga a ultima interrupção
-	CALL	torpedo_move				;movimento torpedo
+
+  	MOV		R4,			torpedos_tab
+	ciclo_chama_torpedos:
+	MOV		R2,		[R4]		;torpedo a testar
+	AND		R2,		R2
+	JZ		fora_cilo_t			;se percorreu todos os torpedos sai do ciclo	
+	ADD		R4,		2			;avança posição seguinte
+	CALL	torpedo_move			;movimento torpedo
+	JMP		ciclo_chama_torpedos	;repete outros torpedos	
+	fora_cilo_t:
 	CALL	bala_r						;movimento bala
   fim_processa:
 	RET
@@ -800,11 +822,18 @@ reset_all:
 	MOV		R1,		1			;estado inicial
 	MOV		[R0],	R1
 
-  torpedo_init:
-	MOV		R0,		torpedo
-	ADD		R0,		4
+  torpedos_init:
+	MOV		R4,		torpedos_tab
+  torpedos_c_init:
+  	MOV		R0,		[R4]	;torpedo a testar
+  	AND		R0,		R0
+  	JZ		bala_init		;verifica fim tabela
+  	ADD		R4,		2		;avança torpedo seguinte
+
+	ADD		R0,		4		;avança para posição do estado
 	MOV		R1,		0
-	MOV		[R0],	R1
+	MOV		[R0],	R1		;inativa o torpedo
+	JMP		torpedos_c_init	;repete outros torpedos
 
   bala_init:
   	MOV		R0,		bala
@@ -920,7 +949,7 @@ verifica_movimentos:
 ; │	ROTINA:		torpedo_move											│
 ; │	DESCRICAO:	movimenta o torpedo	- [rot1]							│
 ; │																		│
-; │	INPUT:		N/A														│
+; │	INPUT:		R2 - torpedo											│
 ; │	OUTPUT:		torpedo pixelscreen + memoria							│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 torpedo_move:
@@ -928,8 +957,6 @@ torpedo_move:
 	PUSH	R1
 	PUSH	R2
 	PUSH	R4
-
-	MOV		R2,		torpedo
 
 	MOV		R0,		[R2]	;posição torpedo XXYY
 	MOV		R1,		[R2+4]	;estado [ativo/inativo]
@@ -951,7 +978,7 @@ torpedo_move:
 	CALL	imagem
 	MOV		[R0],	R2
 	MOV		R1,		1
-	CALL	imagem
+	CALL	imagem	
 	CALL	verifica_choque
 	JMP		fim_m_torpedo
 
@@ -972,7 +999,7 @@ torpedo_move:
 ; │	ROTINA:		verifica_choque											│
 ; │	DESCRICAO:	verifica se o torpedo atingiu um barco					│
 ; │																		│
-; │	INPUT:		N/A														│
+; │	INPUT:		R0	-	torpedo											│
 ; │	OUTPUT:		N/A														│
 ; ╰─────────────────────────────────────────────────────────────────────╯
 verifica_choque:
@@ -988,7 +1015,6 @@ verifica_choque:
 	PUSH	R9
 	PUSH	R10
 	
-	MOV		R0,		torpedo
 	MOV		R1,		sub_max_y
 	MOV		R2,		[R0]
 	MOV		R3,		00FFH
@@ -1106,7 +1132,13 @@ torpedo_cria:
 	CMP		R2,		R0
 	JNZ		fim_c_torpedo	;se não foi premida a tecla 5 não faz nada
 
-	MOV		R2,		torpedo
+	MOV		R4,		torpedos_tab
+
+	v_torpedo:
+	MOV		R2,		[R4]	;copia o endereço do torpedo seguinte
+	AND		R2,		R2		;verifica se está num torpedo (0=fim tabela)
+	JZ		fim_c_torpedo	;significa que todos os torpedos estão ativos
+	ADD		R4,		2		;posição seguinte tabela
 
 	MOV		R0,		[R2]	;posição torpedo XXYY
 	MOV		R1,		[R2+2]	;tamanho torpedo ∆X∆Y
@@ -1114,7 +1146,7 @@ torpedo_cria:
 	SHR		R5,		8		;elimina o byte seguinte
 
 	AND		R5,		R5
-	JNZ		fim_c_torpedo	;se já estiver ativo não faz nada
+	JNZ		v_torpedo	;se já estiver ativo verifica outro torpedo
 
 	MOV		R3,		submarino
 	MOV		R3,		[R3]		;XXYY submarino
@@ -1128,6 +1160,7 @@ torpedo_cria:
 	SUB		R2,		4
 	MOV		R0,		R2
 	CALL	imagem
+	JMP		fim_c_torpedo
 
   fim_c_torpedo:
 	POP		R5
