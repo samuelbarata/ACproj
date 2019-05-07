@@ -12,6 +12,13 @@
 ;│	C		D		E		F ⬣	│
 ;╰──────────────────────────────╯
 
+;definição de barcos fora da string
+;chamada de barcos no ciclo principal
+;strings negativas
+;velocidade :gun:
+;inicio
+;random entre o barco que spawna
+
 
 ; ╭─────────────────────────────────────────────────────────────────────╮
 ; │ Constantes															│
